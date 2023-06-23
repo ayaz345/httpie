@@ -21,7 +21,7 @@ from httpie.plugins.manager import (
 
 
 def make_name() -> str:
-    return 'httpie-' + secrets.token_hex(4)
+    return f'httpie-{secrets.token_hex(4)}'
 
 
 @dataclass
@@ -76,7 +76,7 @@ class Plugin:
             )
             '''))
 
-        with open(self.path / (self.import_name + '.py'), 'w') as stream:
+        with open(self.path / f'{self.import_name}.py', 'w') as stream:
             stream.write('from httpie.plugins import *\n')
             stream.writelines(
                 f'class {name.title()}({CLASSES[group].__name__}): ...\n'
@@ -181,7 +181,7 @@ def dummy_plugin(interface):
 @pytest.fixture(scope='function')
 def broken_plugin(interface):
     base_plugin = interface.make_dummy_plugin()
-    with open(base_plugin.path / (base_plugin.import_name + '.py'), 'a') as stream:
+    with open(base_plugin.path / f'{base_plugin.import_name}.py', 'a') as stream:
         stream.write('raise ValueError("broken plugin")\n')
     return base_plugin
 

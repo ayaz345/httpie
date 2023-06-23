@@ -56,9 +56,7 @@ XML_DATA_FORMATTED = pretty_xml(parse_xml(XML_DATA_RAW))
 
 
 def read_session_file(session_file: Path, *, extra_variables: Optional[Dict[str, str]] = None) -> Any:
-    with open(session_file) as stream:
-        data = stream.read()
-
+    data = Path(session_file).read_text()
     session_vars = {**SESSION_VARIABLES, **(extra_variables or {})}
     for variable, value in session_vars.items():
         data = data.replace(variable, value)

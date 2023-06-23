@@ -136,7 +136,7 @@ class Argument(typing.NamedTuple):
             result['is_positional'] = True
 
         qualifiers = JSON_QUALIFIER_TO_OPTIONS[configuration.get('nargs', Qualifiers.SUPPRESS)]
-        result.update(qualifiers)
+        result |= qualifiers
 
         description = configuration.get('help')
         if description and description is not Qualifiers.SUPPRESS:

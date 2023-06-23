@@ -20,7 +20,7 @@ class TokenKind(Enum):
             if value is self:
                 return repr(key)
         else:
-            return 'a ' + self.name.lower()
+            return f'a {self.name.lower()}'
 
 
 OPERATORS = {

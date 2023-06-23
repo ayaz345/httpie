@@ -45,8 +45,14 @@ def test_pretty_redirected_stream(httpbin):
         stdin_isatty=False,
         stdout_isatty=False,
     )
-    r = http('--verbose', '--pretty=all', '--stream', 'GET',
-             httpbin.url + '/get', env=env)
+    r = http(
+        '--verbose',
+        '--pretty=all',
+        '--stream',
+        'GET',
+        f'{httpbin.url}/get',
+        env=env,
+    )
     assert BINARY_SUPPRESSED_NOTICE.decode() in r
 
 
@@ -56,8 +62,13 @@ def test_pretty_stream_ensure_full_stream_is_retrieved(httpbin):
         stdin_isatty=False,
         stdout_isatty=False,
     )
-    r = http('--pretty=format', '--stream', 'GET',
-             httpbin.url + '/stream/3', env=env)
+    r = http(
+        '--pretty=format',
+        '--stream',
+        'GET',
+        f'{httpbin.url}/stream/3',
+        env=env,
+    )
     assert r.count('/stream/3') == 3
 
 
@@ -74,7 +85,7 @@ def test_pretty_options_with_and_without_stream_with_converter(pretty, stream):
         responses.add(responses.GET, DUMMY_URL, body=body,
                       stream=True, content_type='json/bytes')
 
-        args = ['--pretty=' + pretty, 'GET', DUMMY_URL]
+        args = [f'--pretty={pretty}', 'GET', DUMMY_URL]
         if stream:
             args.insert(0, '--stream')
         r = http(*args)
@@ -97,8 +108,14 @@ def test_encoded_stream(httpbin):
         stdin=StdinBytesIO(BIN_FILE_PATH.read_bytes()),
         stdin_isatty=False,
     )
-    r = http('--pretty=none', '--stream', '--verbose', 'GET',
-             httpbin.url + '/get', env=env)
+    r = http(
+        '--pretty=none',
+        '--stream',
+        '--verbose',
+        'GET',
+        f'{httpbin.url}/get',
+        env=env,
+    )
     assert BINARY_SUPPRESSED_NOTICE.decode() in r
 
 
@@ -110,8 +127,14 @@ def test_redirected_stream(httpbin):
         stdin_isatty=False,
         stdin=StdinBytesIO(BIN_FILE_PATH.read_bytes()),
     )
-    r = http('--pretty=none', '--stream', '--verbose', 'GET',
-             httpbin.url + '/get', env=env)
+    r = http(
+        '--pretty=none',
+        '--stream',
+        '--verbose',
+        'GET',
+        f'{httpbin.url}/get',
+        env=env,
+    )
     assert BIN_FILE_CONTENT in r
 
 
@@ -136,7 +159,7 @@ def test_redirected_stream(httpbin):
 def test_auto_streaming(http_server, extras, expected):
     env = MockEnvironment()
     env.stdout.write = Mock()
-    http(http_server + '/drip', *extras, env=env)
+    http(f'{http_server}/drip', *extras, env=env)
     assert len([
         call_arg
         for call_arg in env.stdout.write.call_args_list
@@ -145,6 +168,6 @@ def test_auto_streaming(http_server, extras, expected):
 
 
 def test_streaming_encoding_detection(http_server):
-    r = http('--stream', http_server + '/stream/encoding/random')
+    r = http('--stream', f'{http_server}/stream/encoding/random')
     assert ASCII_FILE_CONTENT in r
     assert UNICODE_FILE_CONTENT in r

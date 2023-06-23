@@ -63,10 +63,7 @@ class ChunkedMultipartUploadStream(ChunkedStream):
 
 
 def as_bytes(data: Union[str, bytes]) -> bytes:
-    if isinstance(data, str):
-        return data.encode()
-    else:
-        return data
+    return data.encode() if isinstance(data, str) else data
 
 
 CallbackT = Callable[[bytes], bytes]
@@ -171,21 +168,19 @@ def _prepare_file_for_upload(
             callback
         )
 
-    if chunked:
-        from requests_toolbelt import MultipartEncoder
-        if isinstance(file, MultipartEncoder):
-            return ChunkedMultipartUploadStream(
-                encoder=file,
-                event=read_event,
-            )
-        else:
-            return ChunkedUploadStream(
-                stream=file,
-                callback=callback,
-                event=read_event
-            )
-    else:
+    if not chunked:
         return file
+    from requests_toolbelt import MultipartEncoder
+    return (
+        ChunkedMultipartUploadStream(
+            encoder=file,
+            event=read_event,
+        )
+        if isinstance(file, MultipartEncoder)
+        else ChunkedUploadStream(
+            stream=file, callback=callback, event=read_event
+        )
+    )
 
 
 def prepare_request_body(
@@ -205,11 +200,7 @@ def prepare_request_body(
         body = raw_body
 
     if offline:
-        if is_file_like:
-            return as_bytes(raw_body.read())
-        else:
-            return body
-
+        return as_bytes(raw_body.read()) if is_file_like else body
     if is_file_like:
         return _prepare_file_for_upload(
             env,

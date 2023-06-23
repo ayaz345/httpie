@@ -133,11 +133,7 @@ def test_duplicate_keys_support_from_input_file():
 
 @pytest.mark.parametrize('value', [1, 1.1, True, 'some_value'])
 def test_simple_json_arguments_with_non_json(httpbin, value):
-    r = http(
-        '--form',
-        httpbin + '/post',
-        f'option:={json.dumps(value)}',
-    )
+    r = http('--form', f'{httpbin}/post', f'option:={json.dumps(value)}')
     assert r.json['form'] == {'option': str(value)}
 
 
@@ -151,11 +147,7 @@ def test_simple_json_arguments_with_non_json(httpbin, value):
 @pytest.mark.parametrize('value', [[1, 2, 3], {'a': 'b'}, None])
 def test_complex_json_arguments_with_non_json(httpbin, request_type, value):
     with pytest.raises(ParseError) as cm:
-        http(
-            request_type,
-            httpbin + '/post',
-            f'option:={json.dumps(value)}',
-        )
+        http(request_type, f'{httpbin}/post', f'option:={json.dumps(value)}')
 
     cm.match('Cannot use complex JSON value types')
 
@@ -452,7 +444,7 @@ def test_complex_json_arguments_with_non_json(httpbin, request_type, value):
     ],
 )
 def test_nested_json_syntax(input_json, expected_json, httpbin):
-    r = http(httpbin + '/post', *input_json)
+    r = http(f'{httpbin}/post', *input_json)
     assert r.json['json'] == expected_json
 
 
@@ -566,7 +558,7 @@ def test_nested_json_syntax(input_json, expected_json, httpbin):
 )
 def test_nested_json_errors(input_json, expected_error, httpbin):
     with pytest.raises(NestedJSONSyntaxError) as exc:
-        http(httpbin + '/post', *input_json)
+        http(f'{httpbin}/post', *input_json)
 
     exc_lines = str(exc.value).splitlines()
     expected_lines = expected_error.splitlines()
@@ -579,5 +571,5 @@ def test_nested_json_errors(input_json, expected_error, httpbin):
 
 
 def test_nested_json_sparse_array(httpbin_both):
-    r = http(httpbin_both + '/post', 'test[0]:=1', 'test[100]:=1')
+    r = http(f'{httpbin_both}/post', 'test[0]:=1', 'test[100]:=1')
     assert len(r.json['json']['test']) == 101

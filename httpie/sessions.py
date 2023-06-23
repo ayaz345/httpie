@@ -172,8 +172,7 @@ class Session(BaseConfigDict):
             ('cookies', legacy_cookies.pre_process, self._add_cookies),
             ('headers', legacy_headers.pre_process, self._headers.update),
         ]:
-            values = data.get(key)
-            if values:
+            if values := data.get(key):
                 normalized_values = deserializer(self, values)
             else:
                 normalized_values = []

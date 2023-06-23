@@ -72,24 +72,26 @@ class TestItemParsing:
         }
 
     def test_valid_items(self):
-        items = RequestItems.from_args([
-            self.key_value_arg('string=value'),
-            self.key_value_arg('Header:value'),
-            self.key_value_arg('Unset-Header:'),
-            self.key_value_arg('Empty-Header;'),
-            self.key_value_arg('list:=["a", 1, {}, false]'),
-            self.key_value_arg('obj:={"a": "b"}'),
-            self.key_value_arg(r'nested\[2\][a][]=1'),
-            self.key_value_arg('nested[2][a][]:=1'),
-            self.key_value_arg('ed='),
-            self.key_value_arg('bool:=true'),
-            self.key_value_arg('file@' + FILE_PATH_ARG),
-            self.key_value_arg('query==value'),
-            self.key_value_arg('Embedded-Header:@' + FILE_PATH_ARG),
-            self.key_value_arg('string-embed=@' + FILE_PATH_ARG),
-            self.key_value_arg('param-embed==@' + FILE_PATH_ARG),
-            self.key_value_arg('raw-json-embed:=@' + JSON_FILE_PATH_ARG),
-        ])
+        items = RequestItems.from_args(
+            [
+                self.key_value_arg('string=value'),
+                self.key_value_arg('Header:value'),
+                self.key_value_arg('Unset-Header:'),
+                self.key_value_arg('Empty-Header;'),
+                self.key_value_arg('list:=["a", 1, {}, false]'),
+                self.key_value_arg('obj:={"a": "b"}'),
+                self.key_value_arg(r'nested\[2\][a][]=1'),
+                self.key_value_arg('nested[2][a][]:=1'),
+                self.key_value_arg('ed='),
+                self.key_value_arg('bool:=true'),
+                self.key_value_arg(f'file@{FILE_PATH_ARG}'),
+                self.key_value_arg('query==value'),
+                self.key_value_arg(f'Embedded-Header:@{FILE_PATH_ARG}'),
+                self.key_value_arg(f'string-embed=@{FILE_PATH_ARG}'),
+                self.key_value_arg(f'param-embed==@{FILE_PATH_ARG}'),
+                self.key_value_arg(f'raw-json-embed:=@{JSON_FILE_PATH_ARG}'),
+            ]
+        )
 
         # Parsed headers
         # `HTTPHeadersDict` => `dict`
@@ -128,10 +130,12 @@ class TestItemParsing:
                 decode() == FILE_CONTENT)
 
     def test_multiple_file_fields_with_same_field_name(self):
-        items = RequestItems.from_args([
-            self.key_value_arg('file_field@' + FILE_PATH_ARG),
-            self.key_value_arg('file_field@' + FILE_PATH_ARG),
-        ])
+        items = RequestItems.from_args(
+            [
+                self.key_value_arg(f'file_field@{FILE_PATH_ARG}'),
+                self.key_value_arg(f'file_field@{FILE_PATH_ARG}'),
+            ]
+        )
         assert len(items.files['file_field']) == 2
 
     def test_multiple_text_fields_with_same_field_name(self):
@@ -151,7 +155,7 @@ class TestItemParsing:
 
 class TestQuerystring:
     def test_query_string_params_in_url(self, httpbin):
-        r = http('--print=Hhb', 'GET', httpbin.url + '/get?a=1&b=2')
+        r = http('--print=Hhb', 'GET', f'{httpbin.url}/get?a=1&b=2')
         path = '/get?a=1&b=2'
         url = httpbin.url + path
         assert HTTP_OK in r
@@ -159,7 +163,7 @@ class TestQuerystring:
         assert f'"url": "{url}"' in r
 
     def test_query_string_params_items(self, httpbin):
-        r = http('--print=Hhb', 'GET', httpbin.url + '/get', 'a==1')
+        r = http('--print=Hhb', 'GET', f'{httpbin.url}/get', 'a==1')
         path = '/get?a=1'
         url = httpbin.url + path
         assert HTTP_OK in r
@@ -168,8 +172,7 @@ class TestQuerystring:
 
     def test_query_string_params_in_url_and_items_with_duplicates(self,
                                                                   httpbin):
-        r = http('--print=Hhb', 'GET',
-                 httpbin.url + '/get?a=1&a=1', 'a==1', 'a==1')
+        r = http('--print=Hhb', 'GET', f'{httpbin.url}/get?a=1&a=1', 'a==1', 'a==1')
         path = '/get?a=1&a=1&a=1&a=1'
         url = httpbin.url + path
         assert HTTP_OK in r
@@ -251,7 +254,7 @@ class TestArgumentParser:
         self.parser._guess_method()
         assert self.parser.args.method == 'GET'
         assert self.parser.args.url == 'http://example.com/'
-        assert self.parser.args.request_items == []
+        assert not self.parser.args.request_items
 
     def test_guess_when_method_not_set(self):
         self.parser.args = argparse.Namespace()
@@ -263,7 +266,7 @@ class TestArgumentParser:
         self.parser._guess_method()
         assert self.parser.args.method == 'GET'
         assert self.parser.args.url == 'http://example.com/'
-        assert self.parser.args.request_items == []
+        assert not self.parser.args.request_items
 
     def test_guess_when_method_set_but_invalid_and_data_field(self):
         self.parser.args = argparse.Namespace()
@@ -320,12 +323,16 @@ class TestArgumentParser:
 class TestNoOptions:
 
     def test_valid_no_options(self, httpbin):
-        r = http('--verbose', '--no-verbose', 'GET', httpbin.url + '/get')
+        r = http('--verbose', '--no-verbose', 'GET', f'{httpbin.url}/get')
         assert 'GET /get HTTP/1.1' not in r
 
     def test_invalid_no_options(self, httpbin):
-        r = http('--no-war', 'GET', httpbin.url + '/get',
-                 tolerate_error_exit_status=True)
+        r = http(
+            '--no-war',
+            'GET',
+            f'{httpbin.url}/get',
+            tolerate_error_exit_status=True,
+        )
         assert r.exit_status == ExitStatus.ERROR
         assert 'unrecognized arguments: --no-war' in r.stderr
         assert 'GET /get HTTP/1.1' not in r
@@ -338,19 +345,23 @@ class TestStdin:
             stdin=StdinBytesIO(FILE_PATH.read_bytes()),
             stdin_isatty=False,
         )
-        r = http('--ignore-stdin', '--verbose', httpbin.url + '/get', env=env)
+        r = http('--ignore-stdin', '--verbose', f'{httpbin.url}/get', env=env)
         assert HTTP_OK in r
         assert 'GET /get HTTP' in r, "Don't default to POST."
         assert FILE_CONTENT not in r, "Don't send stdin data."
 
     def test_ignore_stdin_cannot_prompt_password(self, httpbin):
-        r = http('--ignore-stdin', '--auth=no-password', httpbin.url + '/get',
-                 tolerate_error_exit_status=True)
+        r = http(
+            '--ignore-stdin',
+            '--auth=no-password',
+            f'{httpbin.url}/get',
+            tolerate_error_exit_status=True,
+        )
         assert r.exit_status == ExitStatus.ERROR
         assert 'because --ignore-stdin' in r.stderr
 
     def test_stdin_closed(self, httpbin):
-        r = http(httpbin + '/get', env=MockEnvironment(stdin=None))
+        r = http(f'{httpbin}/get', env=MockEnvironment(stdin=None))
         assert HTTP_OK in r
 
 

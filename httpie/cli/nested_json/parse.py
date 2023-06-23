@@ -62,7 +62,7 @@ def parse(source: str) -> Iterator[Path]:
             suffix = kinds[0].to_name()
         else:
             suffix = ', '.join(kind.to_name() for kind in kinds[:-1])
-            suffix += ' or ' + kinds[-1].to_name()
+            suffix += f' or {kinds[-1].to_name()}'
         message = f'Expecting {suffix}'
         raise NestedJSONSyntaxError(source, token, message)
 

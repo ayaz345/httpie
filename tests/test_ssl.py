@@ -53,10 +53,7 @@ CA_BUNDLE = pytest_httpbin.certs.where()
                          AVAILABLE_SSL_VERSION_ARG_MAPPING.keys())
 def test_ssl_version(httpbin_secure, ssl_version):
     try:
-        r = http(
-            '--ssl', ssl_version,
-            httpbin_secure + '/get'
-        )
+        r = http('--ssl', ssl_version, f'{httpbin_secure}/get')
         assert HTTP_OK in r
     except ssl_errors as e:
         if ssl_version == 'ssl3':
@@ -77,32 +74,36 @@ def test_ssl_version(httpbin_secure, ssl_version):
 class TestClientCert:
 
     def test_cert_and_key(self, httpbin_secure):
-        r = http(httpbin_secure + '/get',
-                 '--cert', CLIENT_CERT,
-                 '--cert-key', CLIENT_KEY)
+        r = http(
+            f'{httpbin_secure}/get',
+            '--cert',
+            CLIENT_CERT,
+            '--cert-key',
+            CLIENT_KEY,
+        )
         assert HTTP_OK in r
 
     def test_cert_pem(self, httpbin_secure):
-        r = http(httpbin_secure + '/get',
-                 '--cert', CLIENT_PEM)
+        r = http(f'{httpbin_secure}/get', '--cert', CLIENT_PEM)
         assert HTTP_OK in r
 
     def test_cert_file_not_found(self, httpbin_secure):
-        r = http(httpbin_secure + '/get',
-                 '--cert', '/__not_found__',
-                 tolerate_error_exit_status=True)
+        r = http(
+            f'{httpbin_secure}/get',
+            '--cert',
+            '/__not_found__',
+            tolerate_error_exit_status=True,
+        )
         assert r.exit_status == ExitStatus.ERROR
         assert '/__not_found__: No such file or directory' in r.stderr
 
     def test_cert_file_invalid(self, httpbin_secure):
         with pytest.raises(ssl_errors):
-            http(httpbin_secure + '/get',
-                 '--cert', __file__)
+            http(f'{httpbin_secure}/get', '--cert', __file__)
 
     def test_cert_ok_but_missing_key(self, httpbin_secure):
         with pytest.raises(ssl_errors):
-            http(httpbin_secure + '/get',
-                 '--cert', CLIENT_CERT)
+            http(f'{httpbin_secure}/get', '--cert', CLIENT_CERT)
 
 
 class TestServerCert:
@@ -110,19 +111,19 @@ class TestServerCert:
     def test_verify_no_OK(self, httpbin_secure):
         # Avoid warnings when explicitly testing insecure requests
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        r = http(httpbin_secure.url + '/get', '--verify=no')
+        r = http(f'{httpbin_secure.url}/get', '--verify=no')
         assert HTTP_OK in r
 
     @pytest.mark.parametrize('verify_value', ['false', 'fALse'])
     def test_verify_false_OK(self, httpbin_secure, verify_value):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        r = http(httpbin_secure.url + '/get', '--verify', verify_value)
+        r = http(f'{httpbin_secure.url}/get', '--verify', verify_value)
         assert HTTP_OK in r
 
     def test_verify_custom_ca_bundle_path(
         self, httpbin_secure_untrusted
     ):
-        r = http(httpbin_secure_untrusted + '/get', '--verify', CA_BUNDLE)
+        r = http(f'{httpbin_secure_untrusted}/get', '--verify', CA_BUNDLE)
         assert HTTP_OK in r
 
     def test_self_signed_server_cert_by_default_raises_ssl_error(
@@ -130,31 +131,27 @@ class TestServerCert:
         httpbin_secure_untrusted
     ):
         with pytest.raises(ssl_errors):
-            http(httpbin_secure_untrusted.url + '/get')
+            http(f'{httpbin_secure_untrusted.url}/get')
 
     def test_verify_custom_ca_bundle_invalid_path(self, httpbin_secure):
         # since 2.14.0 requests raises IOError (an OSError subclass)
         with pytest.raises(ssl_errors + (OSError,)):
-            http(httpbin_secure.url + '/get', '--verify', '/__not_found__')
+            http(f'{httpbin_secure.url}/get', '--verify', '/__not_found__')
 
     def test_verify_custom_ca_bundle_invalid_bundle(self, httpbin_secure):
         with pytest.raises(ssl_errors):
-            http(httpbin_secure.url + '/get', '--verify', __file__)
+            http(f'{httpbin_secure.url}/get', '--verify', __file__)
 
 
 def test_ciphers(httpbin_secure):
-    r = http(
-        httpbin_secure.url + '/get',
-        '--ciphers',
-        DEFAULT_SSL_CIPHERS_STRING,
-    )
+    r = http(f'{httpbin_secure.url}/get', '--ciphers', DEFAULT_SSL_CIPHERS_STRING)
     assert HTTP_OK in r
 
 
 @pytest.mark.skipif(IS_PYOPENSSL, reason='pyOpenSSL uses a different message format.')
 def test_ciphers_none_can_be_selected(httpbin_secure):
     r = http(
-        httpbin_secure.url + '/get',
+        f'{httpbin_secure.url}/get',
         '--ciphers',
         '__FOO__',
         tolerate_error_exit_status=True,
@@ -180,9 +177,13 @@ def test_pyopenssl_presence():
 @mock.patch('httpie.cli.argtypes.SSLCredentials._prompt_password',
             new=lambda self, prompt: PWD_CLIENT_PASS)
 def test_password_protected_cert_prompt(httpbin_secure):
-    r = http(httpbin_secure + '/get',
-             '--cert', PWD_CLIENT_PEM,
-             '--cert-key', PWD_CLIENT_KEY)
+    r = http(
+        f'{httpbin_secure}/get',
+        '--cert',
+        PWD_CLIENT_PEM,
+        '--cert-key',
+        PWD_CLIENT_KEY,
+    )
     assert HTTP_OK in r
 
 
@@ -190,22 +191,36 @@ def test_password_protected_cert_prompt(httpbin_secure):
             new=lambda self, prompt: PWD_CLIENT_INVALID_PASS)
 def test_password_protected_cert_prompt_invalid(httpbin_secure):
     with pytest.raises(ssl_errors):
-        http(httpbin_secure + '/get',
-             '--cert', PWD_CLIENT_PEM,
-             '--cert-key', PWD_CLIENT_KEY)
+        http(
+            f'{httpbin_secure}/get',
+            '--cert',
+            PWD_CLIENT_PEM,
+            '--cert-key',
+            PWD_CLIENT_KEY,
+        )
 
 
 def test_password_protected_cert_cli_arg(httpbin_secure):
-    r = http(httpbin_secure + '/get',
-             '--cert', PWD_CLIENT_PEM,
-             '--cert-key', PWD_CLIENT_KEY,
-             '--cert-key-pass', PWD_CLIENT_PASS)
+    r = http(
+        f'{httpbin_secure}/get',
+        '--cert',
+        PWD_CLIENT_PEM,
+        '--cert-key',
+        PWD_CLIENT_KEY,
+        '--cert-key-pass',
+        PWD_CLIENT_PASS,
+    )
     assert HTTP_OK in r
 
 
 def test_password_protected_cert_cli_arg_invalid(httpbin_secure):
     with pytest.raises(ssl_errors):
-        http(httpbin_secure + '/get',
-             '--cert', PWD_CLIENT_PEM,
-             '--cert-key', PWD_CLIENT_KEY,
-             '--cert-key-pass', PWD_CLIENT_INVALID_PASS)
+        http(
+            f'{httpbin_secure}/get',
+            '--cert',
+            PWD_CLIENT_PEM,
+            '--cert-key',
+            PWD_CLIENT_KEY,
+            '--cert-key-pass',
+            PWD_CLIENT_INVALID_PASS,
+        )

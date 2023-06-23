@@ -201,8 +201,7 @@ class PrettyStream(EncodedStream):
         for line, lf in iter_lines:
             if b'\0' in line:
                 if first_chunk:
-                    converter = self.conversion.get_converter(self.mime)
-                    if converter:
+                    if converter := self.conversion.get_converter(self.mime):
                         body = bytearray()
                         # noinspection PyAssignmentToLoopOrWithParameter
                         for line, lf in chain([(line, lf)], iter_lines):

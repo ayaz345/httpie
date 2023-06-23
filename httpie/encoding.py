@@ -23,8 +23,7 @@ def detect_encoding(content: ContentBytes) -> str:
     """
     encoding = UTF8
     if len(content) > TOO_SMALL_SEQUENCE:
-        match = from_bytes(bytes(content)).best()
-        if match:
+        if match := from_bytes(bytes(content)).best():
             encoding = match.encoding
     return encoding
 

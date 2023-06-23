@@ -1,4 +1,5 @@
 """Utilities for HTTPie test suite."""
+
 import re
 import shlex
 import os
@@ -29,7 +30,7 @@ REMOTE_HTTPBIN_DOMAIN = 'pie.dev'
 # <https://github.com/kevin1024/pytest-httpbin/issues/33>
 # <https://github.com/kevin1024/pytest-httpbin/issues/28>
 HTTPBIN_WITH_CHUNKED_SUPPORT_DOMAIN = 'pie.dev'
-HTTPBIN_WITH_CHUNKED_SUPPORT = 'http://' + HTTPBIN_WITH_CHUNKED_SUPPORT_DOMAIN
+HTTPBIN_WITH_CHUNKED_SUPPORT = f'http://{HTTPBIN_WITH_CHUNKED_SUPPORT_DOMAIN}'
 
 IS_PYOPENSSL = os.getenv('HTTPIE_TEST_WITH_PYOPENSSL', '0') == '1'
 
@@ -178,10 +179,8 @@ class MockEnvironment(Environment):
 
     def __del__(self):
         # noinspection PyBroadException
-        try:
+        with suppress(Exception):
             self.cleanup()
-        except Exception:
-            pass
 
 
 class PersistentMockEnvironment(MockEnvironment):
@@ -216,7 +215,7 @@ class BaseCLIResponse:
         return re.sub(r'127\.0\.0\.1:\d+', 'httpbin.org', cmd)
 
     @classmethod
-    def from_raw_data(self, data: Union[str, bytes]) -> 'BaseCLIResponse':
+    def from_raw_data(cls, data: Union[str, bytes]) -> 'BaseCLIResponse':
         if isinstance(data, bytes):
             with suppress(UnicodeDecodeError):
                 data = data.decode()
@@ -264,11 +263,9 @@ class StrCLIResponse(str, BaseCLIResponse):
                 except ValueError:
                     pass
                 else:
-                    try:
+                    with suppress(ValueError):
                         # noinspection PyAttributeOutsideInit
                         self._json = json.loads(j)
-                    except ValueError:
-                        pass
         return self._json
 
 
@@ -388,7 +385,7 @@ def http(
         if (not tolerate_error_exit_status
                 and '--traceback' not in args_with_config_defaults):
             add_to_args.append('--traceback')
-        if not any('--timeout' in arg for arg in args_with_config_defaults):
+        if all('--timeout' not in arg for arg in args_with_config_defaults):
             add_to_args.append('--timeout=3')
 
     complete_args = [program_name, *add_to_args, *args]
@@ -434,11 +431,8 @@ def http(
 
         r = BaseCLIResponse.from_raw_data(output)
 
-        try:
+        with suppress(Exception):
             devnull_output = devnull_output.decode()
-        except Exception:
-            pass
-
         r.devnull = devnull_output
         r.stderr = stderr.read()
         r.exit_status = exit_status

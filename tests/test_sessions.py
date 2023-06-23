@@ -82,17 +82,16 @@ class TestSessionFlow(SessionTestBase):
             '--session=test',
             '--auth=username:password',
             'GET',
-            httpbin.url + '/cookies/set?hello=world',
+            f'{httpbin.url}/cookies/set?hello=world',
             'Hello:World',
-            env=self.env()
+            env=self.env(),
         )
         assert HTTP_OK in r1
 
     def test_session_created_and_reused(self, httpbin):
         self.start_session(httpbin)
         # Verify that the session created in setup_method() has been used.
-        r2 = http('--session=test',
-                  'GET', httpbin.url + '/get', env=self.env())
+        r2 = http('--session=test', 'GET', f'{httpbin.url}/get', env=self.env())
         assert HTTP_OK in r2
         assert r2.json['headers']['Hello'] == 'World'
         assert r2.json['headers']['Cookie'] == 'hello=world'
@@ -101,20 +100,23 @@ class TestSessionFlow(SessionTestBase):
     def test_session_update(self, httpbin):
         self.start_session(httpbin)
         # Get a response to a request from the original session.
-        r2 = http('--session=test', 'GET', httpbin.url + '/get',
-                  env=self.env())
+        r2 = http('--session=test', 'GET', f'{httpbin.url}/get', env=self.env())
         assert HTTP_OK in r2
 
         # Make a request modifying the session data.
-        r3 = http('--follow', '--session=test', '--auth=username:password2',
-                  'GET', httpbin.url + '/cookies/set?hello=world2',
-                  'Hello:World2',
-                  env=self.env())
+        r3 = http(
+            '--follow',
+            '--session=test',
+            '--auth=username:password2',
+            'GET',
+            f'{httpbin.url}/cookies/set?hello=world2',
+            'Hello:World2',
+            env=self.env(),
+        )
         assert HTTP_OK in r3
 
         # Get a response to a request from the updated session.
-        r4 = http('--session=test', 'GET', httpbin.url + '/get',
-                  env=self.env())
+        r4 = http('--session=test', 'GET', f'{httpbin.url}/get', env=self.env())
         assert HTTP_OK in r4
         assert r4.json['headers']['Hello'] == 'World2'
         assert r4.json['headers']['Cookie'] == 'hello=world2'
@@ -124,21 +126,24 @@ class TestSessionFlow(SessionTestBase):
     def test_session_read_only(self, httpbin):
         self.start_session(httpbin)
         # Get a response from the original session.
-        r2 = http('--session=test', 'GET', httpbin.url + '/get',
-                  env=self.env())
+        r2 = http('--session=test', 'GET', f'{httpbin.url}/get', env=self.env())
         assert HTTP_OK in r2
 
         # Make a request modifying the session data but
         # with --session-read-only.
-        r3 = http('--follow', '--session-read-only=test',
-                  '--auth=username:password2', 'GET',
-                  httpbin.url + '/cookies/set?hello=world2', 'Hello:World2',
-                  env=self.env())
+        r3 = http(
+            '--follow',
+            '--session-read-only=test',
+            '--auth=username:password2',
+            'GET',
+            f'{httpbin.url}/cookies/set?hello=world2',
+            'Hello:World2',
+            env=self.env(),
+        )
         assert HTTP_OK in r3
 
         # Get a response from the updated session.
-        r4 = http('--session=test', 'GET', httpbin.url + '/get',
-                  env=self.env())
+        r4 = http('--session=test', 'GET', f'{httpbin.url}/get', env=self.env())
         assert HTTP_OK in r4
 
         # Origin can differ on Travis.
@@ -151,18 +156,35 @@ class TestSessionFlow(SessionTestBase):
     def test_session_overwrite_header(self, httpbin):
         self.start_session(httpbin)
 
-        r2 = http('--session=test', 'GET', httpbin.url + '/get',
-                  'Hello:World2', env=self.env())
+        r2 = http(
+            '--session=test',
+            'GET',
+            f'{httpbin.url}/get',
+            'Hello:World2',
+            env=self.env(),
+        )
         assert HTTP_OK in r2
         assert r2.json['headers']['Hello'] == 'World2'
 
-        r3 = http('--session=test', 'GET', httpbin.url + '/get',
-                  'Hello:World2', 'Hello:World3', env=self.env())
+        r3 = http(
+            '--session=test',
+            'GET',
+            f'{httpbin.url}/get',
+            'Hello:World2',
+            'Hello:World3',
+            env=self.env(),
+        )
         assert HTTP_OK in r3
         assert r3.json['headers']['Hello'] == 'World2,World3'
 
-        r3 = http('--session=test', 'GET', httpbin.url + '/get',
-                  'Hello:', 'Hello:World3', env=self.env())
+        r3 = http(
+            '--session=test',
+            'GET',
+            f'{httpbin.url}/get',
+            'Hello:',
+            'Hello:World3',
+            env=self.env(),
+        )
         assert HTTP_OK in r3
         assert 'Hello' not in r3.json['headers']['Hello']
 
@@ -172,32 +194,54 @@ class TestSession(SessionTestBase):
 
     def test_session_ignored_header_prefixes(self, httpbin):
         self.start_session(httpbin)
-        r1 = http('--session=test', 'GET', httpbin.url + '/get',
-                  'Content-Type: text/plain',
-                  'If-Unmodified-Since: Sat, 29 Oct 1994 19:43:31 GMT',
-                  env=self.env())
+        r1 = http(
+            '--session=test',
+            'GET',
+            f'{httpbin.url}/get',
+            'Content-Type: text/plain',
+            'If-Unmodified-Since: Sat, 29 Oct 1994 19:43:31 GMT',
+            env=self.env(),
+        )
         assert HTTP_OK in r1
-        r2 = http('--session=test', 'GET', httpbin.url + '/get',
-                  env=self.env())
+        r2 = http('--session=test', 'GET', f'{httpbin.url}/get', env=self.env())
         assert HTTP_OK in r2
         assert 'Content-Type' not in r2.json['headers']
         assert 'If-Unmodified-Since' not in r2.json['headers']
 
     def test_session_with_upload(self, httpbin):
         self.start_session(httpbin)
-        r = http('--session=test', '--form', '--verbose', 'POST', httpbin.url + '/post',
-                 f'test-file@{FILE_PATH_ARG}', 'foo=bar', env=self.env())
+        r = http(
+            '--session=test',
+            '--form',
+            '--verbose',
+            'POST',
+            f'{httpbin.url}/post',
+            f'test-file@{FILE_PATH_ARG}',
+            'foo=bar',
+            env=self.env(),
+        )
         assert HTTP_OK in r
 
     def test_session_by_path(self, httpbin):
         self.start_session(httpbin)
         session_path = self.config_dir / 'session-by-path.json'
-        r1 = http('--session', str(session_path), 'GET', httpbin.url + '/get',
-                  'Foo:Bar', env=self.env())
+        r1 = http(
+            '--session',
+            str(session_path),
+            'GET',
+            f'{httpbin.url}/get',
+            'Foo:Bar',
+            env=self.env(),
+        )
         assert HTTP_OK in r1
 
-        r2 = http('--session', str(session_path), 'GET', httpbin.url + '/get',
-                  env=self.env())
+        r2 = http(
+            '--session',
+            str(session_path),
+            'GET',
+            f'{httpbin.url}/get',
+            env=self.env(),
+        )
         assert HTTP_OK in r2
         assert r2.json['headers']['Foo'] == 'Bar'
 
@@ -214,21 +258,36 @@ class TestSession(SessionTestBase):
         }
         session_path = self.config_dir / 'session-data.json'
         session_path.write_text(json.dumps(session_data))
-        r = http('--session', str(session_path), 'GET', httpbin.url + '/get',
-                 env=self.env())
+        r = http(
+            '--session',
+            str(session_path),
+            'GET',
+            f'{httpbin.url}/get',
+            env=self.env(),
+        )
         assert HTTP_OK in r
         assert 'Zzz' in r
 
     def test_session_unicode(self, httpbin):
         self.start_session(httpbin)
 
-        r1 = http('--session=test', f'--auth=test:{UNICODE}',
-                  'GET', httpbin.url + '/get', f'Test:{UNICODE}',
-                  env=self.env())
+        r1 = http(
+            '--session=test',
+            f'--auth=test:{UNICODE}',
+            'GET',
+            f'{httpbin.url}/get',
+            f'Test:{UNICODE}',
+            env=self.env(),
+        )
         assert HTTP_OK in r1
 
-        r2 = http('--session=test', '--verbose', 'GET',
-                  httpbin.url + '/get', env=self.env())
+        r2 = http(
+            '--session=test',
+            '--verbose',
+            'GET',
+            f'{httpbin.url}/get',
+            env=self.env(),
+        )
         assert HTTP_OK in r2
 
         # FIXME: Authorization *sometimes* is not present
@@ -240,13 +299,16 @@ class TestSession(SessionTestBase):
     def test_session_default_header_value_overwritten(self, httpbin):
         self.start_session(httpbin)
         # https://github.com/httpie/httpie/issues/180
-        r1 = http('--session=test',
-                  httpbin.url + '/headers', 'User-Agent:custom',
-                  env=self.env())
+        r1 = http(
+            '--session=test',
+            f'{httpbin.url}/headers',
+            'User-Agent:custom',
+            env=self.env(),
+        )
         assert HTTP_OK in r1
         assert r1.json['headers']['User-Agent'] == 'custom'
 
-        r2 = http('--session=test', httpbin.url + '/headers', env=self.env())
+        r2 = http('--session=test', f'{httpbin.url}/headers', env=self.env())
         assert HTTP_OK in r2
         assert r2.json['headers']['User-Agent'] == 'custom'
 
@@ -256,8 +318,7 @@ class TestSession(SessionTestBase):
         cwd = os.getcwd()
         os.chdir(tmp_path)
         try:
-            http('--session=test', '--download',
-                 httpbin.url + '/get', env=self.env())
+            http('--session=test', '--download', f'{httpbin.url}/get', env=self.env())
         finally:
             os.chdir(cwd)
 
@@ -286,17 +347,20 @@ class TestSession(SessionTestBase):
         plugin_manager.register(Plugin)
 
         r1 = http(
-            '--session', str(session_path),
-            httpbin + '/basic-auth/user/password',
+            '--session',
+            str(session_path),
+            f'{httpbin}/basic-auth/user/password',
             '--auth-type',
             Plugin.auth_type,
-            '--auth', 'user:password',
+            '--auth',
+            'user:password',
             '--print=H',
         )
 
         r2 = http(
-            '--session', str(session_path),
-            httpbin + '/basic-auth/user/password',
+            '--session',
+            str(session_path),
+            f'{httpbin}/basic-auth/user/password',
             '--print=H',
         )
         assert f'Authorization: {header}' in r1
@@ -317,20 +381,21 @@ class TestSession(SessionTestBase):
         plugin_manager.register(Plugin)
 
         with mock.patch(
-            'httpie.cli.argtypes.AuthCredentials._getpass',
-            new=lambda self, prompt: 'password'
-        ):
+                'httpie.cli.argtypes.AuthCredentials._getpass',
+                new=lambda self, prompt: 'password'
+            ):
             r1 = http(
-                '--session', str(session_path),
-                httpbin + '/basic-auth/user/password',
+                '--session',
+                str(session_path),
+                f'{httpbin}/basic-auth/user/password',
                 '--auth-type',
                 Plugin.auth_type,
-                '--auth', 'user',
+                '--auth',
+                'user',
             )
 
         r2 = http(
-            '--session', str(session_path),
-            httpbin + '/basic-auth/user/password',
+            '--session', str(session_path), f'{httpbin}/basic-auth/user/password'
         )
         assert HTTP_OK in r1
         assert HTTP_OK in r2
@@ -355,12 +420,15 @@ class TestSession(SessionTestBase):
                 return basic_auth()
 
         plugin_manager.register(Plugin)
-        http('--session', str(self.session_path),
-             httpbin + '/basic-auth/user/password',
-             '--auth-type',
-             Plugin.auth_type,
-             '--auth', 'user:password',
-             )
+        http(
+            '--session',
+            str(self.session_path),
+            f'{httpbin}/basic-auth/user/password',
+            '--auth-type',
+            Plugin.auth_type,
+            '--auth',
+            'user:password',
+        )
         updated_session = json.loads(self.session_path.read_text(encoding=UTF8))
         assert updated_session['auth']['type'] == 'test-saved'
         assert updated_session['auth']['raw_auth'] == 'user:password'
@@ -384,9 +452,10 @@ class TestExpiredCookies(CookieTestBase):
 
     def test_expired_cookies(self, httpbin):
         r = http(
-            '--session', str(self.session_path),
+            '--session',
+            str(self.session_path),
             '--print=H',
-            httpbin.url + '/cookies/delete?cookie2',
+            f'{httpbin.url}/cookies/delete?cookie2',
         )
         assert 'Cookie: cookie1=foo; cookie2=foo' in r
 
@@ -482,18 +551,19 @@ class TestCookieStorage(CookieTestBase):
         httpbin,
     ):
         r = http(
-            '--session', str(self.session_path),
+            '--session',
+            str(self.session_path),
             '--print=H',
             httpbin.url,
-            'Cookie:' + specified_cookie_header,
+            f'Cookie:{specified_cookie_header}',
         )
-        parsed_request_headers = {  # noqa
-            name: value for name, value in [
+        parsed_request_headers = dict(
+            [
                 line.split(': ', 1)
                 for line in r.splitlines()
                 if line and ':' in line
             ]
-        }
+        )
         # Note: cookies in the request are in an undefined order.
         expected_request_cookie_set = set(expected_effective_cookie_header.split('; '))
         actual_request_cookie_set = set(parsed_request_headers['Cookie'].split('; '))
@@ -536,9 +606,10 @@ class TestCookieStorage(CookieTestBase):
         3. cookie already stored in session file
         """
         http(
-            '--session', str(self.session_path),
+            '--session',
+            str(self.session_path),
             httpbin.url + set_cookie,
-            'Cookie:' + cli_cookie,
+            f'Cookie:{cli_cookie}',
         )
         updated_session = json.loads(self.session_path.read_text(encoding=UTF8))
 
@@ -548,10 +619,7 @@ class TestCookieStorage(CookieTestBase):
 @pytest.fixture
 def basic_session(httpbin, tmp_path):
     session_path = tmp_path / 'session.json'
-    http(
-        '--session', str(session_path),
-        httpbin + '/get'
-    )
+    http('--session', str(session_path), f'{httpbin}/get')
     return session_path
 
 
@@ -579,10 +647,7 @@ def open_raw_session(path: Path, read_only: bool = False) -> None:
 def read_stderr(env: Environment) -> bytes:
     env.stderr.seek(0)
     stderr_data = env.stderr.read()
-    if isinstance(stderr_data, str):
-        return stderr_data.encode()
-    else:
-        return stderr_data
+    return stderr_data.encode() if isinstance(stderr_data, str) else stderr_data
 
 
 def test_old_session_version_saved_as_is(basic_session, mock_env):
@@ -669,10 +734,7 @@ def test_old_session_cookie_layout_loading(basic_session, httpbin, mock_env):
         session['cookies'] = {}
         session.cookies.set('foo', 'bar')
 
-    response = http(
-        '--session', str(basic_session),
-        httpbin + '/cookies'
-    )
+    response = http('--session', str(basic_session), f'{httpbin}/cookies')
     assert response.json['cookies'] == {'foo': 'bar'}
 
 
@@ -698,10 +760,7 @@ def test_session_cookie_layout_preservation_on_new_cookies(basic_session, httpbi
         session.cookies.set('foo', 'bar')
         session.save()
 
-    http(
-        '--session', str(basic_session),
-        httpbin + '/cookies/set/baz/quux'
-    )
+    http('--session', str(basic_session), f'{httpbin}/cookies/set/baz/quux')
 
     with open_session(basic_session, mock_env, read_only=True) as session:
         assert isinstance(session['cookies'], layout_type)
@@ -762,10 +821,7 @@ def test_old_session_header_layout_loading(basic_session, httpbin, mock_env):
         session['headers'] = {}
         session._headers.add('Foo', 'Bar')
 
-    response = http(
-        '--session', str(basic_session),
-        httpbin + '/get'
-    )
+    response = http('--session', str(basic_session), f'{httpbin}/get')
     assert response.json['headers']['Foo'] == 'Bar'
 
 
@@ -789,11 +845,7 @@ def test_session_header_layout_preservation_on_new_headers(basic_session, httpbi
         session['headers'] = layout_type()
         session._headers.add('Foo', 'Bar')
 
-    http(
-        '--session', str(basic_session),
-        httpbin + '/get',
-        'Baz:Quux'
-    )
+    http('--session', str(basic_session), f'{httpbin}/get', 'Baz:Quux')
 
     with open_session(basic_session, mock_env, read_only=True) as session:
         assert isinstance(session['headers'], layout_type)
@@ -801,18 +853,15 @@ def test_session_header_layout_preservation_on_new_headers(basic_session, httpbi
 
 def test_session_multiple_headers_with_same_name(basic_session, httpbin):
     http(
-        '--session', str(basic_session),
-        httpbin + '/get',
+        '--session',
+        str(basic_session),
+        f'{httpbin}/get',
         'Foo:bar',
         'Foo:baz',
-        'Foo:bar'
+        'Foo:bar',
     )
 
-    r = http(
-        '--offline',
-        '--session', str(basic_session),
-        httpbin + '/get',
-    )
+    r = http('--offline', '--session', str(basic_session), f'{httpbin}/get')
     assert r.count('Foo: bar') == 2
     assert 'Foo: baz' in r
 
@@ -833,10 +882,11 @@ def test_session_multiple_headers_with_same_name(basic_session, httpbin):
 def test_secure_cookies_on_localhost(mock_env, tmp_path, server, expected_cookies):
     session_path = tmp_path / 'session.json'
     http(
-        '--session', str(session_path),
-        server + '/cookies/set',
+        '--session',
+        str(session_path),
+        f'{server}/cookies/set',
         'secure_cookie==foo',
-        'insecure_cookie==bar'
+        'insecure_cookie==bar',
     )
 
     with open_session(session_path, mock_env) as session:
@@ -844,8 +894,5 @@ def test_secure_cookies_on_localhost(mock_env, tmp_path, server, expected_cookie
             if cookie.name == 'secure_cookie':
                 cookie.secure = True
 
-    r = http(
-        '--session', str(session_path),
-        server + '/cookies'
-    )
+    r = http('--session', str(session_path), f'{server}/cookies')
     assert r.json == {'cookies': expected_cookies}

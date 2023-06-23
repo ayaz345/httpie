@@ -98,12 +98,9 @@ def to_usage(
 
         nargs = argument.configuration.get('nargs')
         if nargs is Qualifiers.OPTIONAL:
-            text.append('[' + name + ']', style=STYLE_USAGE_OPTIONAL)
+            text.append(f'[{name}]', style=STYLE_USAGE_OPTIONAL)
         elif nargs is Qualifiers.ZERO_OR_MORE:
-            text.append(
-                '[' + name + ' ...]',
-                style=STYLE_USAGE_OPTIONAL,
-            )
+            text.append(f'[{name} ...]', style=STYLE_USAGE_OPTIONAL)
         else:
             text.append(
                 name,

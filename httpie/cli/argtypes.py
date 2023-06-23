@@ -225,11 +225,7 @@ def parse_format_options(s: str, defaults: Optional[dict]) -> dict:
         if value in value_map:
             parsed_value = value_map[value]
         else:
-            if value.isnumeric():
-                parsed_value = int(value)
-            else:
-                parsed_value = value
-
+            parsed_value = int(value) if value.isnumeric() else value
         if defaults is None:
             options.setdefault(section, {})
         else:

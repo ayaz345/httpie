@@ -118,7 +118,7 @@ def test_fetch_broken_json(static_fetch_data, without_warnings):
 def test_check_updates_disable_warnings(
     without_warnings, httpbin, fetch_update_mock
 ):
-    r = http(httpbin + '/get', env=without_warnings)
+    r = http(f'{httpbin}/get', env=without_warnings)
     assert not fetch_update_mock.called
     assert not check_update_warnings(r.stderr)
 
@@ -126,7 +126,7 @@ def test_check_updates_disable_warnings(
 def test_check_updates_first_invocation(
     with_warnings, httpbin, fetch_update_mock
 ):
-    r = http(httpbin + '/get', env=with_warnings)
+    r = http(f'{httpbin}/get', env=with_warnings)
     assert fetch_update_mock.called
     assert not check_update_warnings(r.stderr)
 
@@ -147,7 +147,7 @@ def test_check_updates_first_time_after_data_fetch(
     build_channel,
 ):
     http('fetch_updates', '--daemon', env=with_warnings)
-    r = http(httpbin + '/get', env=with_warnings)
+    r = http(f'{httpbin}/get', env=with_warnings)
 
     assert not fetch_update_mock.called
     assert (not should_issue_warning) or check_update_warnings(r.stderr)
@@ -161,7 +161,7 @@ def test_check_updates_first_time_after_data_fetch_unknown_build_channel(
     unknown_build_channel,
 ):
     http('fetch_updates', '--daemon', env=with_warnings)
-    r = http(httpbin + '/get', env=with_warnings)
+    r = http(f'{httpbin}/get', env=with_warnings)
 
     assert not fetch_update_mock.called
     assert not check_update_warnings(r.stderr)
@@ -207,8 +207,7 @@ def without_warnings(tmp_path):
 
 @pytest.fixture
 def fetch_update_mock(mocker):
-    mock_fetch = mocker.patch('httpie.internal.update_warnings.fetch_updates')
-    return mock_fetch
+    return mocker.patch('httpie.internal.update_warnings.fetch_updates')
 
 
 @pytest.fixture

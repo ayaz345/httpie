@@ -261,18 +261,16 @@ def main() -> None:
 
     options = parser.parse_args()
 
-    configs = []
-
     base_config = {
         options.target_branch: HTTPieEnvironment(options.target_repo, options.target_branch),
         'this_branch': HTTPieEnvironment(options.local_repo, options.local_branch),
     }
-    configs.append(base_config)
-
+    configs = [base_config]
     if options.complex:
         complex_config = {
-            env_name
-            + '-complex': dataclasses.replace(env, dependencies=ADDITIONAL_DEPS)
+            f'{env_name}-complex': dataclasses.replace(
+                env, dependencies=ADDITIONAL_DEPS
+            )
             for env_name, env in base_config.items()
         }
         configs.append(complex_config)

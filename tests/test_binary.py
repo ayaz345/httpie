@@ -15,36 +15,47 @@ class TestBinaryRequestData:
                 stdin_isatty=False,
                 stdout_isatty=False
             )
-            r = http('--print=B', 'POST', httpbin.url + '/post', env=env)
+            r = http('--print=B', 'POST', f'{httpbin.url}/post', env=env)
             assert r == BIN_FILE_CONTENT
 
     def test_binary_file_path(self, httpbin):
         env = MockEnvironment(stdin_isatty=True, stdout_isatty=False)
-        r = http('--print=B', 'POST', httpbin.url + '/post',
-                 '@' + BIN_FILE_PATH_ARG, env=env)
+        r = http(
+            '--print=B',
+            'POST',
+            f'{httpbin.url}/post',
+            f'@{BIN_FILE_PATH_ARG}',
+            env=env,
+        )
         assert r == BIN_FILE_CONTENT
 
     def test_binary_file_form(self, httpbin):
         env = MockEnvironment(stdin_isatty=True, stdout_isatty=False)
-        r = http('--print=B', '--form', 'POST', httpbin.url + '/post',
-                 'test@' + BIN_FILE_PATH_ARG, env=env)
+        r = http(
+            '--print=B',
+            '--form',
+            'POST',
+            f'{httpbin.url}/post',
+            f'test@{BIN_FILE_PATH_ARG}',
+            env=env,
+        )
         assert bytes(BIN_FILE_CONTENT) in bytes(r)
 
 
 class TestBinaryResponseData:
 
     def test_binary_suppresses_when_terminal(self, httpbin):
-        r = http('GET', httpbin + '/bytes/1024?seed=1')
+        r = http('GET', f'{httpbin}/bytes/1024?seed=1')
         assert BINARY_SUPPRESSED_NOTICE.decode() in r
 
     def test_binary_suppresses_when_not_terminal_but_pretty(self, httpbin):
         env = MockEnvironment(stdin_isatty=True, stdout_isatty=False)
-        r = http('--pretty=all', 'GET', httpbin + '/bytes/1024?seed=1', env=env)
+        r = http('--pretty=all', 'GET', f'{httpbin}/bytes/1024?seed=1', env=env)
         assert BINARY_SUPPRESSED_NOTICE.decode() in r
 
     def test_binary_included_and_correct_when_suitable(self, httpbin):
         env = MockEnvironment(stdin_isatty=True, stdout_isatty=False)
-        url = httpbin + '/bytes/1024?seed=1'
+        url = f'{httpbin}/bytes/1024?seed=1'
         r = http('GET', url, env=env)
         expected = requests.get(url).content
         assert r == expected

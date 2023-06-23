@@ -42,7 +42,7 @@ def pretty_xml(document: 'Document',
 
     # xml.dom automatically adds the declaration, even if
     # it is not present in the actual body. Remove it.
-    if len(lines) >= 1 and parse_declaration(lines[0]):
+    if lines and parse_declaration(lines[0]):
         lines.pop(0)
         if declaration:
             lines.insert(0, declaration)

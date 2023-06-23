@@ -30,10 +30,7 @@ class _GenericColorCaster(dict):
     """
 
     def _translate(self, key: Any) -> Any:
-        if isinstance(key, GenericColor):
-            return key.name.lower()
-        else:
-            return key
+        return key.name.lower() if isinstance(key, GenericColor) else key
 
     def __getitem__(self, key: Any) -> Any:
         return super().__getitem__(self._translate(key))

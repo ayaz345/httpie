@@ -148,9 +148,7 @@ def split_cookies(cookies):
     This function splits cookies apart being careful to not to
     split on ``, `` which may be part of cookie value.
     """
-    if not cookies:
-        return []
-    return RE_COOKIE_SPLIT.split(cookies)
+    return [] if not cookies else RE_COOKIE_SPLIT.split(cookies)
 
 
 def get_expired_cookies(
@@ -207,8 +205,7 @@ def parse_content_type_header(header):
     params_dict = {}
     items_to_strip = "\"' "
     for param in params:
-        param = param.strip()
-        if param:
+        if param := param.strip():
             key, value = param, True
             index_of_equals = param.find("=")
             if index_of_equals != -1:
@@ -257,10 +254,7 @@ def split_iterable(iterable: Iterable[T], key: Callable[[T], bool]) -> Tuple[Lis
 
 def unwrap_context(exc: Exception) -> Optional[Exception]:
     context = exc.__context__
-    if isinstance(context, Exception):
-        return unwrap_context(context)
-    else:
-        return exc
+    return unwrap_context(context) if isinstance(context, Exception) else exc
 
 
 def url_as_host(url: str) -> str:

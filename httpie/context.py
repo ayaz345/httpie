@@ -96,7 +96,7 @@ class Environment:
         any of the class attributes for this instance.
 
         """
-        assert all(hasattr(type(self), attr) for attr in kwargs.keys())
+        assert all(hasattr(type(self), attr) for attr in kwargs)
         self.__dict__.update(**kwargs)
 
         # The original STDERR unaffected by --quiet’ing.
@@ -123,7 +123,7 @@ class Environment:
     def __str__(self):
         defaults = dict(type(self).__dict__)
         actual = dict(defaults)
-        actual.update(self.__dict__)
+        actual |= self.__dict__
         actual['config'] = self.config
         return repr_dict({
             key: value

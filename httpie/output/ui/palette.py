@@ -38,7 +38,7 @@ class ColorString(str):
         if isinstance(other, str):
             # In case of PieColor.BLUE | SOMETHING
             # we just create a new string.
-            return ColorString(self + ' ' + other)
+            return ColorString(f'{self} {other}')
         elif isinstance(other, GenericColor):
             # If we see a GenericColor, then we'll wrap it
             # in with the desired property in a different class.
@@ -93,12 +93,11 @@ class GenericColor(Enum):
     ) -> str:
         """Apply the given style to a particular value."""
         exposed_color = self.value[style]
-        if style is Styles.PIE:
-            assert style_name is not None
-            shade = PIE_STYLE_TO_SHADE[PieStyle(style_name)]
-            return get_color(exposed_color, shade)
-        else:
+        if style is not Styles.PIE:
             return exposed_color
+        assert style_name is not None
+        shade = PIE_STYLE_TO_SHADE[PieStyle(style_name)]
+        return get_color(exposed_color, shade)
 
 
 @dataclass
@@ -230,26 +229,24 @@ COLOR_PALETTE = {
         'DEFAULT': '#DBDE52',
     },
 }
-COLOR_PALETTE.update(
-    {
-        # Terminal-specific palette customizations.
-        PieColor.GREY: {
-            # Grey is the same no matter shade for the colors
-            shade: COLOR_PALETTE[PieColor.GREY]['500']
-            for shade in COLOR_PALETTE[PieColor.GREY].keys()
-        },
-        PieColor.PRIMARY: {
-            '700': COLOR_PALETTE[PieColor.BLACK],
-            '600': PYGMENTS_BRIGHT_BLACK,
-            '500': COLOR_PALETTE[PieColor.WHITE],
-        },
-        PieColor.SECONDARY: {
-            '700': '#37523C',
-            '600': '#6c6969',
-            '500': '#6c6969',
-        },
-    }
-)
+COLOR_PALETTE |= {
+    # Terminal-specific palette customizations.
+    PieColor.GREY: {
+        # Grey is the same no matter shade for the colors
+        shade: COLOR_PALETTE[PieColor.GREY]['500']
+        for shade in COLOR_PALETTE[PieColor.GREY].keys()
+    },
+    PieColor.PRIMARY: {
+        '700': COLOR_PALETTE[PieColor.BLACK],
+        '600': PYGMENTS_BRIGHT_BLACK,
+        '500': COLOR_PALETTE[PieColor.WHITE],
+    },
+    PieColor.SECONDARY: {
+        '700': '#37523C',
+        '600': '#6c6969',
+        '500': '#6c6969',
+    },
+}
 
 
 def boldify(color: PieColor) -> str:

@@ -48,7 +48,7 @@ def upgrade_session(env: Environment, args: argparse.Namespace, hostname: str, s
         if is_version_greater(version, session.version)
     ]
 
-    if len(fixers) == 0:
+    if not fixers:
         env.stdout.write(f'{session_name!r} @ {hostname!r} is already up to date.\n')
         return ExitStatus.SUCCESS
 

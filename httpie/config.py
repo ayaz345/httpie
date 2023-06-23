@@ -31,9 +31,7 @@ def get_default_config_dir() -> Path:
         $XDG_CONFIG_HOME is supported; $XDG_CONFIG_DIRS is not
 
     """
-    # 1. explicitly set through env
-    env_config_dir = os.environ.get(ENV_HTTPIE_CONFIG_DIR)
-    if env_config_dir:
+    if env_config_dir := os.environ.get(ENV_HTTPIE_CONFIG_DIR):
         return Path(env_config_dir)
 
     # 2. Windows

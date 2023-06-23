@@ -9,8 +9,7 @@ class HTTPieCookiePolicy(cookiejar.DefaultCookiePolicy):
     def return_ok_secure(self, cookie, request):
         """Check whether the given cookie is sent to a secure host."""
 
-        is_secure_protocol = super().return_ok_secure(cookie, request)
-        if is_secure_protocol:
+        if is_secure_protocol := super().return_ok_secure(cookie, request):
             return True
 
         # The original implementation of this method only takes secure protocols

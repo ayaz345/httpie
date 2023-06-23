@@ -19,9 +19,11 @@ class NestedJSONSyntaxError(ValueError):
     def __str__(self):
         lines = [f'HTTPie {self.message_kind} Error: {self.message}']
         if self.token is not None:
-            lines.append(self.source)
-            lines.append(
-                ' ' * self.token.start
-                + HIGHLIGHTER * (self.token.end - self.token.start)
+            lines.extend(
+                (
+                    self.source,
+                    ' ' * self.token.start
+                    + HIGHLIGHTER * (self.token.end - self.token.start),
+                )
             )
         return '\n'.join(lines)

@@ -24,10 +24,7 @@ class TestHandler(BaseHTTPRequestHandler):
     def do_generic(self):
         parse_result = urlparse(self.path)
         func = self.handlers[self.command].get(parse_result.path)
-        if func is None:
-            return self.send_error(HTTPStatus.NOT_FOUND)
-
-        return func(self)
+        return self.send_error(HTTPStatus.NOT_FOUND) if func is None else func(self)
 
     do_GET = do_generic
     do_POST = do_generic
@@ -51,8 +48,8 @@ def chunked_drip(handler):
     handler.send_header('Transfer-Encoding', 'chunked')
     handler.end_headers()
 
+    body = 'test\n'
     for _ in range(3):
-        body = 'test\n'
         handler.wfile.write(f'{len(body):X}\r\n{body}\r\n'.encode('utf-8'))
 
     handler.wfile.write('0\r\n\r\n'.encode('utf-8'))

@@ -60,7 +60,7 @@ class ManPageBuilder:
 
     def write(self, text: str, *, bold: bool = False) -> None:
         if bold:
-            text = '.B ' + text
+            text = f'.B {text}'
         self.source.append(text)
 
     def separate(self) -> None:
@@ -95,10 +95,10 @@ class ManPageBuilder:
         self.in_section = False
 
     def underline(self, text: str) -> str:
-        return r'\fI\,{}\/\fR'.format(text)
+        return f'\fI\,{text}\/\fR'
 
     def boldify(self, text: str) -> str:
-        return r'\fB\,{}\/\fR'.format(text)
+        return f'\fB\,{text}\/\fR'
 
 
 def _escape_and_dedent(text: str) -> str:
@@ -116,9 +116,17 @@ def _escape_and_dedent(text: str) -> str:
 def to_man_page(program_name: str, spec: ParserSpec, *, is_top_level_cmd: bool = False) -> str:
     builder = ManPageBuilder()
     builder.add_comment(
-        f"This file is auto-generated from the parser declaration "
-        + (f"in {Path(spec.source_file).relative_to(PROJECT_ROOT)} " if spec.source_file else "")
-        + f"by {Path(__file__).relative_to(PROJECT_ROOT)}."
+        (
+            (
+                "This file is auto-generated from the parser declaration "
+                + (
+                    f"in {Path(spec.source_file).relative_to(PROJECT_ROOT)} "
+                    if spec.source_file
+                    else ""
+                )
+            )
+            + f"by {Path(__file__).relative_to(PROJECT_ROOT)}."
+        )
     )
 
     builder.title_line(

@@ -108,11 +108,7 @@ class BaseHTTPieArgumentParser(argparse.ArgumentParser):
     # noinspection PyShadowingBuiltins
     def _print_message(self, message, file=None):
         # Sneak in our stderr/stdout.
-        if hasattr(self, 'root'):
-            env = self.root.env
-        else:
-            env = self.env
-
+        env = self.root.env if hasattr(self, 'root') else self.env
         if env is not None:
             file = {
                 sys.stdout: env.stdout,
@@ -210,16 +206,14 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
             if os.path.basename(self.env.program_name) == 'https':
                 scheme = 'https://'
             else:
-                scheme = self.args.default_scheme + '://'
+                scheme = f'{self.args.default_scheme}://'
 
-            # See if we're using curl style shorthand for localhost (:3000/foo)
-            shorthand = re.match(r'^:(?!:)(\d*)(/?.*)$', self.args.url)
-            if shorthand:
-                port = shorthand.group(1)
-                rest = shorthand.group(2)
-                self.args.url = scheme + 'localhost'
+            if shorthand := re.match(r'^:(?!:)(\d*)(/?.*)$', self.args.url):
+                port = shorthand[1]
+                rest = shorthand[2]
+                self.args.url = f'{scheme}localhost'
                 if port:
-                    self.args.url += ':' + port
+                    self.args.url += f':{port}'
                 self.args.url += rest
             else:
                 self.args.url = scheme + self.args.url
@@ -251,10 +245,7 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
             try:
                 self.args.output_file.truncate()
             except OSError as e:
-                if e.errno == errno.EINVAL:
-                    # E.g. /dev/null on Linux.
-                    pass
-                else:
+                if e.errno != errno.EINVAL:
                     raise
             self.env.stdout = self.args.output_file
             self.env.stdout_isatty = False
@@ -262,7 +253,7 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
         if self.args.quiet:
             self.env.quiet = self.args.quiet
             self.env.stderr = self.env.devnull
-            if not (self.args.output_file_specified and not self.args.download):
+            if not self.args.output_file_specified or self.args.download:
                 self.env.stdout = self.env.devnull
             self.env.apply_warnings_filter()
 
@@ -306,9 +297,7 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
             if (not self.args.ignore_netrc
                     and self.args.auth is None
                     and plugin.netrc_parse):
-                # Only host needed, so it’s OK URL not finalized.
-                netrc_credentials = get_netrc_auth(self.args.url)
-                if netrc_credentials:
+                if netrc_credentials := get_netrc_auth(self.args.url):
                     self.args.auth = AuthCredentials(
                         key=netrc_credentials[0],
                         value=netrc_credentials[1],
@@ -321,17 +310,12 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
 
             plugin.raw_auth = self.args.auth
             self.args.auth_plugin = plugin
-            already_parsed = isinstance(self.args.auth, AuthCredentials)
-
             if self.args.auth is None or not plugin.auth_parse:
                 self.args.auth = plugin.get_auth()
             else:
-                if already_parsed:
-                    # from the URL
-                    credentials = self.args.auth
-                else:
-                    credentials = parse_auth(self.args.auth)
+                already_parsed = isinstance(self.args.auth, AuthCredentials)
 
+                credentials = self.args.auth if already_parsed else parse_auth(self.args.auth)
                 if (not credentials.has_password()
                         and plugin.prompt_password):
                     if self.args.ignore_stdin:
@@ -343,7 +327,7 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
                     credentials.prompt_password(url.netloc)
 
                 if (credentials.key and credentials.value):
-                    plugin.raw_auth = credentials.key + ":" + credentials.value
+                    plugin.raw_auth = f"{credentials.key}:{credentials.value}"
 
                 self.args.auth = plugin.get_auth(
                     username=credentials.key,
@@ -368,7 +352,7 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
                 continue
 
             # --no-option => --option
-            inverted = '--' + option[5:]
+            inverted = f'--{option[5:]}'
             for action in self._actions:
                 if inverted in action.option_strings:
                     setattr(self.args, action.dest, action.default)
@@ -414,12 +398,7 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
         if self.args.method is None:
             # Invoked as `http URL'.
             assert not self.args.request_items
-            if self.has_input_data:
-                self.args.method = HTTP_POST
-            else:
-                self.args.method = HTTP_GET
-
-        # FIXME: False positive, e.g., "localhost" matches but is a valid URL.
+            self.args.method = HTTP_POST if self.has_input_data else HTTP_GET
         elif not re.match('^[a-zA-Z]+$', self.args.method):
             # Invoked as `http URL item+'. The URL is now in `args.method`
             # and the first ITEM is now incorrectly in `args.url`.
@@ -485,8 +464,7 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
             self._body_from_file(fd)
 
             if 'Content-Type' not in self.args.headers:
-                content_type = get_content_type(fn)
-                if content_type:
+                if content_type := get_content_type(fn):
                     self.args.headers['Content-Type'] = content_type
 
     def _process_output_options(self):

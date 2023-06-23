@@ -196,8 +196,7 @@ def process_data_embed_file_contents_arg(arg: KeyValueArg) -> str:
 
 def process_data_embed_raw_json_file_arg(arg: KeyValueArg) -> JSONType:
     contents = load_text_file(arg)
-    value = load_json(arg, contents)
-    return value
+    return load_json(arg, contents)
 
 
 def process_data_raw_json_embed_arg(arg: KeyValueArg) -> JSONType:

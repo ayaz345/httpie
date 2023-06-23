@@ -32,7 +32,7 @@ SORTED_BUNDLED_STYLES = sorted(BUNDLED_STYLES)
 @pytest.mark.parametrize('stdout_isatty', [True, False])
 def test_output_option(tmp_path, httpbin, stdout_isatty):
     output_filename = tmp_path / 'test_output_option'
-    url = httpbin + '/robots.txt'
+    url = f'{httpbin}/robots.txt'
 
     r = http('--output', str(output_filename), url,
              env=MockEnvironment(stdout_isatty=stdout_isatty))
@@ -54,7 +54,7 @@ class TestQuietFlag:
             stdout_isatty=True,
             devnull=io.BytesIO()
         )
-        r = http(*quiet_flags, 'GET', httpbin.url + '/get', env=env)
+        r = http(*quiet_flags, 'GET', f'{httpbin.url}/get', env=env)
         assert env.stdout is env.devnull
         assert env.stderr is env.devnull
         assert HTTP_OK in r.devnull
@@ -63,31 +63,41 @@ class TestQuietFlag:
 
     def test_quiet_with_check_status_non_zero(self, httpbin):
         r = http(
-            '--quiet', '--check-status', httpbin + '/status/500',
+            '--quiet',
+            '--check-status',
+            f'{httpbin}/status/500',
             tolerate_error_exit_status=True,
         )
         assert 'http: warning: HTTP 500' in r.stderr
 
     def test_quiet_with_check_status_non_zero_pipe(self, httpbin):
         r = http(
-            '--quiet', '--check-status', httpbin + '/status/500',
+            '--quiet',
+            '--check-status',
+            f'{httpbin}/status/500',
             tolerate_error_exit_status=True,
-            env=MockEnvironment(stdout_isatty=False)
+            env=MockEnvironment(stdout_isatty=False),
         )
         assert 'http: warning: HTTP 500' in r.stderr
 
     def test_quiet_quiet_with_check_status_non_zero(self, httpbin):
         r = http(
-            '--quiet', '--quiet', '--check-status', httpbin + '/status/500',
+            '--quiet',
+            '--quiet',
+            '--check-status',
+            f'{httpbin}/status/500',
             tolerate_error_exit_status=True,
         )
         assert not r.stderr
 
     def test_quiet_quiet_with_check_status_non_zero_pipe(self, httpbin):
         r = http(
-            '--quiet', '--quiet', '--check-status', httpbin + '/status/500',
+            '--quiet',
+            '--quiet',
+            '--check-status',
+            f'{httpbin}/status/500',
             tolerate_error_exit_status=True,
-            env=MockEnvironment(stdout_isatty=False)
+            env=MockEnvironment(stdout_isatty=False),
         )
         assert 'http: warning: HTTP 500' in r.stderr
 
@@ -97,7 +107,6 @@ class TestQuietFlag:
         (['-q'], 1),
         (['-qq'], 0),
     ])
-    # Might fail on Windows due to interference from other warnings.
     @pytest.mark.xfail
     def test_quiet_on_python_warnings(self, test_patch, httpbin, flags, expected_warnings):
         def warn_and_run(*args, **kwargs):
@@ -106,7 +115,7 @@ class TestQuietFlag:
 
         test_patch.side_effect = warn_and_run
         with pytest.warns(None) as record:
-            http(*flags, httpbin + '/get')
+            http(*flags, f'{httpbin}/get')
 
         assert len(record) == expected_warnings
 
@@ -133,9 +142,12 @@ class TestQuietFlag:
             devnull=io.BytesIO()
         )
         r = http(
-            *quiet_flags, '--auth', 'user', 'GET',
-            httpbin.url + '/basic-auth/user/password',
-            env=env
+            *quiet_flags,
+            '--auth',
+            'user',
+            'GET',
+            f'{httpbin.url}/basic-auth/user/password',
+            env=env,
         )
         assert env.stdout is env.devnull
         assert env.stderr is env.devnull
@@ -147,7 +159,7 @@ class TestQuietFlag:
     @pytest.mark.parametrize('output_options', ['-h', '-b', '-v', '-p=hH'])
     def test_quiet_with_explicit_output_options(self, httpbin, quiet_flags, output_options):
         env = MockEnvironment(stdin_isatty=True, stdout_isatty=True)
-        r = http(*quiet_flags, output_options, httpbin.url + '/get', env=env)
+        r = http(*quiet_flags, output_options, f'{httpbin.url}/get', env=env)
         assert env.stdout is env.devnull
         assert env.stderr is env.devnull
         assert r == ''
@@ -156,7 +168,7 @@ class TestQuietFlag:
     @pytest.mark.parametrize('quiet_flags', QUIET_SCENARIOS)
     @pytest.mark.parametrize('with_download', [True, False])
     def test_quiet_with_output_redirection(self, tmp_path, httpbin, quiet_flags, with_download):
-        url = httpbin + '/robots.txt'
+        url = f'{httpbin}/robots.txt'
         output_path = Path('output.txt')
         env = MockEnvironment()
         orig_cwd = os.getcwd()
@@ -187,32 +199,28 @@ class TestQuietFlag:
 
 class TestVerboseFlag:
     def test_verbose(self, httpbin):
-        r = http('--verbose',
-                 'GET', httpbin.url + '/get', 'test-header:__test__')
+        r = http('--verbose', 'GET', f'{httpbin.url}/get', 'test-header:__test__')
         assert HTTP_OK in r
         assert r.count('__test__') == 2
 
     def test_verbose_raw(self, httpbin):
-        r = http('--verbose', '--raw', 'foo bar',
-                 'POST', httpbin.url + '/post')
+        r = http('--verbose', '--raw', 'foo bar', 'POST', f'{httpbin.url}/post')
         assert HTTP_OK in r
         assert 'foo bar' in r
 
     def test_verbose_form(self, httpbin):
         # https://github.com/httpie/httpie/issues/53
-        r = http('--verbose', '--form', 'POST', httpbin.url + '/post',
-                 'A=B', 'C=D')
+        r = http('--verbose', '--form', 'POST', f'{httpbin.url}/post', 'A=B', 'C=D')
         assert HTTP_OK in r
         assert 'A=B&C=D' in r
 
     def test_verbose_json(self, httpbin):
-        r = http('--verbose',
-                 'POST', httpbin.url + '/post', 'foo=bar', 'baz=bar')
+        r = http('--verbose', 'POST', f'{httpbin.url}/post', 'foo=bar', 'baz=bar')
         assert HTTP_OK in r
         assert '"baz": "bar"' in r
 
     def test_verbose_implies_all(self, httpbin):
-        r = http('--verbose', '--follow', httpbin + '/redirect/1')
+        r = http('--verbose', '--follow', f'{httpbin}/redirect/1')
         assert 'GET /redirect/1 HTTP/1.1' in r
         assert 'HTTP/1.1 302 FOUND' in r
         assert 'GET /get HTTP/1.1' in r
@@ -263,7 +271,7 @@ def test_ensure_contents_colored(httpbin, endpoint):
 @pytest.mark.parametrize('style', PIE_STYLE_NAMES)
 def test_ensure_meta_is_colored(httpbin, style):
     env = MockEnvironment(colors=256)
-    r = http('--meta', '--style', style, 'GET', httpbin + '/get', env=env)
+    r = http('--meta', '--style', style, 'GET', f'{httpbin}/get', env=env)
     assert COLOR in r
 
 
@@ -277,12 +285,10 @@ def test_ensure_meta_is_colored(httpbin, style):
 ])
 def test_ensure_status_code_is_shown_on_all_themes(http_server, style, msg):
     env = MockEnvironment(colors=256)
-    r = http('--style', style,
-             http_server + '/status/msg',
-             '--raw', msg, env=env)
+    r = http('--style', style, f'{http_server}/status/msg', '--raw', msg, env=env)
 
     # Trailing space is stripped away.
-    assert 'HTTP/1.0 200' + msg.rstrip() in strip_colors(r)
+    assert f'HTTP/1.0 200{msg.rstrip()}' in strip_colors(r)
 
 
 class TestPrettyOptions:
@@ -290,20 +296,20 @@ class TestPrettyOptions:
 
     def test_pretty_enabled_by_default(self, httpbin):
         env = MockEnvironment(colors=256)
-        r = http('GET', httpbin.url + '/get', env=env)
+        r = http('GET', f'{httpbin.url}/get', env=env)
         assert COLOR in r
 
     def test_pretty_enabled_by_default_unless_stdout_redirected(self, httpbin):
-        r = http('GET', httpbin.url + '/get')
+        r = http('GET', f'{httpbin.url}/get')
         assert COLOR not in r
 
     def test_force_pretty(self, httpbin):
         env = MockEnvironment(stdout_isatty=False, colors=256)
-        r = http('--pretty=all', 'GET', httpbin.url + '/get', env=env)
+        r = http('--pretty=all', 'GET', f'{httpbin.url}/get', env=env)
         assert COLOR in r
 
     def test_force_ugly(self, httpbin):
-        r = http('--pretty=none', 'GET', httpbin.url + '/get')
+        r = http('--pretty=none', 'GET', f'{httpbin.url}/get')
         assert COLOR not in r
 
     def test_subtype_based_pygments_lexer_match(self, httpbin):
@@ -312,24 +318,40 @@ class TestPrettyOptions:
 
         """
         env = MockEnvironment(colors=256)
-        r = http('--print=B', '--pretty=all', httpbin.url + '/post',
-                 'Content-Type:text/foo+json', 'a=b', env=env)
+        r = http(
+            '--print=B',
+            '--pretty=all',
+            f'{httpbin.url}/post',
+            'Content-Type:text/foo+json',
+            'a=b',
+            env=env,
+        )
         assert COLOR in r
 
     def test_colors_option(self, httpbin):
         env = MockEnvironment(colors=256)
-        r = http('--print=B', '--pretty=colors',
-                 'GET', httpbin.url + '/get', 'a=b',
-                 env=env)
+        r = http(
+            '--print=B',
+            '--pretty=colors',
+            'GET',
+            f'{httpbin.url}/get',
+            'a=b',
+            env=env,
+        )
         # Tests that the JSON data isn't formatted.
         assert not r.strip().count('\n')
         assert COLOR in r
 
     def test_format_option(self, httpbin):
         env = MockEnvironment(colors=256)
-        r = http('--print=B', '--pretty=format',
-                 'GET', httpbin.url + '/get', 'a=b',
-                 env=env)
+        r = http(
+            '--print=B',
+            '--pretty=format',
+            'GET',
+            f'{httpbin.url}/get',
+            'a=b',
+            env=env,
+        )
         # Tests that the JSON data is formatted.
         assert r.strip().count('\n') == 2
         assert COLOR not in r
@@ -355,25 +377,25 @@ class TestLineEndings:
         return body
 
     def test_CRLF_headers_only(self, httpbin):
-        r = http('--headers', 'GET', httpbin.url + '/get')
+        r = http('--headers', 'GET', f'{httpbin.url}/get')
         body = self._validate_crlf(r)
         assert not body, f'Garbage after headers: {r!r}'
 
     def test_CRLF_ugly_response(self, httpbin):
-        r = http('--pretty=none', 'GET', httpbin.url + '/get')
+        r = http('--pretty=none', 'GET', f'{httpbin.url}/get')
         self._validate_crlf(r)
 
     def test_CRLF_formatted_response(self, httpbin):
-        r = http('--pretty=format', 'GET', httpbin.url + '/get')
+        r = http('--pretty=format', 'GET', f'{httpbin.url}/get')
         assert r.exit_status == ExitStatus.SUCCESS
         self._validate_crlf(r)
 
     def test_CRLF_ugly_request(self, httpbin):
-        r = http('--pretty=none', '--print=HB', 'GET', httpbin.url + '/get')
+        r = http('--pretty=none', '--print=HB', 'GET', f'{httpbin.url}/get')
         self._validate_crlf(r)
 
     def test_CRLF_formatted_request(self, httpbin):
-        r = http('--pretty=format', '--print=HB', 'GET', httpbin.url + '/get')
+        r = http('--pretty=format', '--print=HB', 'GET', f'{httpbin.url}/get')
         self._validate_crlf(r)
 
 
@@ -381,9 +403,13 @@ class TestFormatOptions:
     def test_header_formatting_options(self):
         def get_headers(sort):
             return http(
-                '--offline', '--print=H',
-                '--format-options', 'headers.sort:' + sort,
-                'example.org', 'ZZZ:foo', 'XXX:foo',
+                '--offline',
+                '--print=H',
+                '--format-options',
+                f'headers.sort:{sort}',
+                'example.org',
+                'ZZZ:foo',
+                'XXX:foo',
             )
 
         r_sorted = get_headers('true')

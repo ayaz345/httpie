@@ -61,18 +61,14 @@ def expect_tokens(tokens: Iterable[Expect], s: str):
 
 
 def expect_token(token: Expect, s: str) -> str:
-    if token is Expect.BODY:
-        s = expect_body(s)
-    else:
-        s = expect_regex(token, s)
-    return s
+    return expect_body(s) if token is Expect.BODY else expect_regex(token, s)
 
 
 def expect_regex(token: Expect, s: str) -> str:
-    match = TOKEN_REGEX_MAP[token].match(s)
-    if not match:
+    if match := TOKEN_REGEX_MAP[token].match(s):
+        return s[match.end():]
+    else:
         raise OutputMatchingError(f'No match for {token} in {s!r}')
-    return s[match.end():]
 
 
 def expect_body(s: str) -> str:
@@ -83,16 +79,13 @@ def expect_body(s: str) -> str:
     if 'content-disposition:' in s.lower():
         # Multipart body heuristic.
         final_boundary_re = re.compile('\r\n--[^-]+?--\r\n')
-        match = final_boundary_re.search(s)
-        if match:
+        if match := final_boundary_re.search(s):
             return s[match.end():]
 
-    endings = [s.index(sep) for sep in BODY_ENDINGS if sep in s]
-    if not endings:
-        s = ''  # Only body
-    else:
+    if endings := [s.index(sep) for sep in BODY_ENDINGS if sep in s]:
         end = min(endings)
         if end == 0:
             raise OutputMatchingError(f'Empty body: {s!r}')
-        s = s[end:]
-    return s
+        return s[end:]
+    else:
+        return ''

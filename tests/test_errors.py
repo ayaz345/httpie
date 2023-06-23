@@ -50,18 +50,18 @@ def test_error_custom_dns(program, error_code, expected_message):
 
 def test_max_headers_limit(httpbin_both):
     with raises(ConnectionError) as e:
-        http('--max-headers=1', httpbin_both + '/get')
+        http('--max-headers=1', f'{httpbin_both}/get')
     assert 'got more than 1 headers' in str(e.value)
 
 
 def test_max_headers_no_limit(httpbin_both):
-    assert HTTP_OK in http('--max-headers=0', httpbin_both + '/get')
+    assert HTTP_OK in http('--max-headers=0', f'{httpbin_both}/get')
 
 
 def test_response_charset_option_unknown_encoding(httpbin_both):
     r = http(
         '--response-charset=foobar',
-        httpbin_both + '/get',
+        f'{httpbin_both}/get',
         tolerate_error_exit_status=True,
     )
     assert "'foobar' is not a supported encoding" in r.stderr
@@ -70,7 +70,7 @@ def test_response_charset_option_unknown_encoding(httpbin_both):
 def test_response_mime_option_invalid_mime_type(httpbin_both):
     r = http(
         '--response-mime=foobar',
-        httpbin_both + '/get',
+        f'{httpbin_both}/get',
         tolerate_error_exit_status=True,
     )
     assert "'foobar' doesn’t look like a mime type" in r.stderr

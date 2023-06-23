@@ -136,9 +136,8 @@ class TestDownloads:
             downloader.start(
                 initial_url='/',
                 final_response=Response(
-                    url=httpbin_both.url + '/',
-                    headers={'Content-Length': 10}
-                )
+                    url=f'{httpbin_both.url}/', headers={'Content-Length': 10}
+                ),
             )
             time.sleep(1.1)
             downloader.chunk_downloaded(b'12345')
@@ -151,8 +150,8 @@ class TestDownloads:
         with open(os.devnull, 'w') as devnull:
             downloader = Downloader(mock_env, output_file=devnull)
             downloader.start(
-                final_response=Response(url=httpbin_both.url + '/'),
-                initial_url='/'
+                final_response=Response(url=f'{httpbin_both.url}/'),
+                initial_url='/',
             )
             time.sleep(1.1)
             downloader.chunk_downloaded(b'12345')
@@ -168,13 +167,13 @@ class TestDownloads:
                 downloader = Downloader(mock_env)
                 downloader.start(
                     final_response=Response(
-                        url=httpbin_both.url + '/',
+                        url=f'{httpbin_both.url}/',
                         headers={
                             'Content-Length': 5,
                             'Content-Disposition': 'attachment; filename="filename.bin"',
-                        }
+                        },
                     ),
-                    initial_url='/'
+                    initial_url='/',
                 )
                 downloader.chunk_downloaded(b'12345')
                 downloader.finish()
@@ -192,10 +191,9 @@ class TestDownloads:
             downloader = Downloader(mock_env, output_file=devnull)
             downloader.start(
                 final_response=Response(
-                    url=httpbin_both.url + '/',
-                    headers={'Content-Length': 5}
+                    url=f'{httpbin_both.url}/', headers={'Content-Length': 5}
                 ),
-                initial_url='/'
+                initial_url='/',
             )
             downloader.chunk_downloaded(b'1234')
             downloader.finish()
@@ -212,10 +210,9 @@ class TestDownloads:
                 downloader = Downloader(mock_env, output_file=output_file)
                 downloader.start(
                     final_response=Response(
-                        url=httpbin_both.url + '/',
-                        headers={'Content-Length': 5}
+                        url=f'{httpbin_both.url}/', headers={'Content-Length': 5}
                     ),
-                    initial_url='/'
+                    initial_url='/',
                 )
                 downloader.chunk_downloaded(b'123')
                 downloader.finish()
@@ -238,11 +235,14 @@ class TestDownloads:
 
                 downloader.start(
                     final_response=Response(
-                        url=httpbin_both.url + '/',
-                        headers={'Content-Length': 5, 'Content-Range': 'bytes 3-4/5'},
-                        status_code=PARTIAL_CONTENT
+                        url=f'{httpbin_both.url}/',
+                        headers={
+                            'Content-Length': 5,
+                            'Content-Range': 'bytes 3-4/5',
+                        },
+                        status_code=PARTIAL_CONTENT,
                     ),
-                    initial_url='/'
+                    initial_url='/',
                 )
                 downloader.chunk_downloaded(b'45')
                 downloader.finish()
@@ -255,7 +255,7 @@ class TestDownloads:
             os.chdir(tmp_dirname)
             try:
                 assert os.listdir('.') == []
-                http('--download', httpbin.url + '/redirect/1')
+                http('--download', f'{httpbin.url}/redirect/1')
                 assert os.listdir('.') == [expected_filename]
             finally:
                 os.chdir(orig_cwd)

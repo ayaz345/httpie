@@ -3,7 +3,7 @@ from .utils import http
 
 
 def _stringify(fixture):
-    return fixture + ''
+    return f'{fixture}'
 
 
 @pytest.mark.parametrize('instance', [
@@ -16,9 +16,9 @@ def test_explicit_user_set_cookie(httpbin, instance):
 
     r = http(
         '--follow',
-        httpbin + '/redirect-to',
+        f'{httpbin}/redirect-to',
         f'url=={_stringify(instance)}/cookies',
-        'Cookie:a=b'
+        'Cookie:a=b',
     )
     assert r.json == {'cookies': {}}
 
@@ -35,9 +35,9 @@ def test_explicit_user_set_cookie_in_session(tmp_path, httpbin, instance):
         '--follow',
         '--session',
         str(tmp_path / 'session.json'),
-        httpbin + '/redirect-to',
+        f'{httpbin}/redirect-to',
         f'url=={_stringify(instance)}/cookies',
-        'Cookie:a=b'
+        'Cookie:a=b',
     )
     assert r.json == {'cookies': {'a': 'b'}}
 
@@ -54,14 +54,14 @@ def test_saved_user_set_cookie_in_session(tmp_path, httpbin, instance):
         '--follow',
         '--session',
         str(tmp_path / 'session.json'),
-        httpbin + '/get',
-        'Cookie:a=b'
+        f'{httpbin}/get',
+        'Cookie:a=b',
     )
     r = http(
         '--follow',
         '--session',
         str(tmp_path / 'session.json'),
-        httpbin + '/redirect-to',
+        f'{httpbin}/redirect-to',
         f'url=={_stringify(instance)}/cookies',
     )
     assert r.json == {'cookies': {'a': 'b'}}
@@ -86,9 +86,9 @@ def test_explicit_user_set_headers(httpbin, tmp_path, instance, session):
     r = http(
         '--follow',
         *session_args,
-        httpbin + '/redirect-to',
+        f'{httpbin}/redirect-to',
         f'url=={_stringify(instance)}/get',
-        'X-Custom-Header:value'
+        'X-Custom-Header:value',
     )
     assert 'X-Custom-Header' in r.json['headers']
 
@@ -105,11 +105,7 @@ def test_server_set_cookie_on_redirect_same_domain(tmp_path, httpbin, session):
             str(tmp_path / 'session.json')
         ])
 
-    r = http(
-        '--follow',
-        *session_args,
-        httpbin + '/cookies/set/a/b',
-    )
+    r = http('--follow', *session_args, f'{httpbin}/cookies/set/a/b')
     assert r.json['cookies'] == {'a': 'b'}
 
 
@@ -128,9 +124,9 @@ def test_server_set_cookie_on_redirect_different_domain(tmp_path, http_server, h
     r = http(
         '--follow',
         *session_args,
-        http_server + '/cookies/set-and-redirect',
-        f"X-Redirect-To:{httpbin + '/cookies'}",
-        'X-Cookies:a=b'
+        f'{http_server}/cookies/set-and-redirect',
+        f"X-Redirect-To:{httpbin}/cookies",
+        'X-Cookies:a=b',
     )
     assert r.json['cookies'] == {'a': 'b'}
 
@@ -138,31 +134,19 @@ def test_server_set_cookie_on_redirect_different_domain(tmp_path, http_server, h
 def test_saved_session_cookies_on_same_domain(tmp_path, httpbin):
     # Saved session cookies ARE persisted when making a new
     # request to the same domain.
-    http(
-        '--session',
-        str(tmp_path / 'session.json'),
-        httpbin + '/cookies/set/a/b'
-    )
-    r = http(
-        '--session',
-        str(tmp_path / 'session.json'),
-        httpbin + '/cookies'
-    )
+    http('--session', str(tmp_path / 'session.json'), f'{httpbin}/cookies/set/a/b')
+    r = http('--session', str(tmp_path / 'session.json'), f'{httpbin}/cookies')
     assert r.json == {'cookies': {'a': 'b'}}
 
 
 def test_saved_session_cookies_on_different_domain(tmp_path, httpbin, remote_httpbin):
     # Saved session cookies ARE persisted when making a new
     # request to a different domain.
-    http(
-        '--session',
-        str(tmp_path / 'session.json'),
-        httpbin + '/cookies/set/a/b'
-    )
+    http('--session', str(tmp_path / 'session.json'), f'{httpbin}/cookies/set/a/b')
     r = http(
         '--session',
         str(tmp_path / 'session.json'),
-        remote_httpbin + '/cookies'
+        f'{remote_httpbin}/cookies',
     )
     assert r.json == {'cookies': {}}
 
@@ -209,49 +193,40 @@ def test_saved_session_cookies_on_redirect(tmp_path, initial_domain, first_reque
     http(
         '--session',
         str(tmp_path / 'session.json'),
-        initial_domain + '/cookies/set/a/b'
+        f'{initial_domain}/cookies/set/a/b',
     )
     r = http(
         '--session',
         str(tmp_path / 'session.json'),
         '--follow',
-        first_request_domain + '/redirect-to',
-        f'url=={_stringify(second_request_domain)}/cookies'
+        f'{first_request_domain}/redirect-to',
+        f'url=={_stringify(second_request_domain)}/cookies',
     )
-    if expect_cookies:
-        expected_data = {'cookies': {'a': 'b'}}
-    else:
-        expected_data = {'cookies': {}}
+    expected_data = {'cookies': {'a': 'b'}} if expect_cookies else {'cookies': {}}
     assert r.json == expected_data
 
 
 def test_saved_session_cookie_pool(tmp_path, httpbin, remote_httpbin):
+    http('--session', str(tmp_path / 'session.json'), f'{httpbin}/cookies/set/a/b')
     http(
         '--session',
         str(tmp_path / 'session.json'),
-        httpbin + '/cookies/set/a/b'
+        f'{remote_httpbin}/cookies/set/a/c',
     )
     http(
         '--session',
         str(tmp_path / 'session.json'),
-        remote_httpbin + '/cookies/set/a/c'
-    )
-    http(
-        '--session',
-        str(tmp_path / 'session.json'),
-        remote_httpbin + '/cookies/set/b/d'
+        f'{remote_httpbin}/cookies/set/b/d',
     )
 
     response = http(
-        '--session',
-        str(tmp_path / 'session.json'),
-        httpbin + '/cookies'
+        '--session', str(tmp_path / 'session.json'), f'{httpbin}/cookies'
     )
     assert response.json['cookies'] == {'a': 'b'}
 
     response = http(
         '--session',
         str(tmp_path / 'session.json'),
-        remote_httpbin + '/cookies'
+        f'{remote_httpbin}/cookies',
     )
     assert response.json['cookies'] == {'a': 'c', 'b': 'd'}

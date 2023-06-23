@@ -86,8 +86,7 @@ class ColorFormatter(FormatterPlugin):
         ).strip()
 
     def format_body(self, body: str, mime: str) -> str:
-        lexer = self.get_lexer_for_body(mime, body)
-        if lexer:
+        if lexer := self.get_lexer_for_body(mime, body):
             body = pygments.highlight(
                 code=body,
                 lexer=lexer,
@@ -369,18 +368,16 @@ def make_style(name, raw_styles, shade):
 
 
 def make_styles():
-    styles = {}
-
-    for shade, name in SHADE_TO_PIE_STYLE.items():
-        styles[name] = [
+    return {
+        name: [
             make_style(name, style_map, shade)
             for style_name, style_map in [
                 (f'Pie{name}HeaderStyle', PIE_HEADER_STYLE),
                 (f'Pie{name}BodyStyle', PIE_BODY_STYLE),
             ]
         ]
-
-    return styles
+        for shade, name in SHADE_TO_PIE_STYLE.items()
+    }
 
 
 PIE_STYLES = make_styles()

@@ -70,10 +70,7 @@ class LazyChoices(argparse.Action, Generic[T]):
         return item in self.load()
 
     def __iter__(self) -> Iterator[T]:
-        if self.sort:
-            return iter(sorted(self.load()))
-        else:
-            return iter(self.load())
+        return iter(sorted(self.load())) if self.sort else iter(self.load())
 
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)

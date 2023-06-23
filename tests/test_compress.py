@@ -29,49 +29,43 @@ def assert_decompressed_equal(base64_compressed_data, expected_str):
 
 
 def test_cannot_combine_compress_with_chunked(httpbin):
-    r = http('--compress', '--chunked', httpbin.url + '/get',
-             tolerate_error_exit_status=True)
+    r = http(
+        '--compress',
+        '--chunked',
+        f'{httpbin.url}/get',
+        tolerate_error_exit_status=True,
+    )
     assert r.exit_status == ExitStatus.ERROR
     assert 'cannot combine --compress and --chunked' in r.stderr
 
 
 def test_cannot_combine_compress_with_multipart(httpbin):
-    r = http('--compress', '--multipart', httpbin.url + '/get',
-             tolerate_error_exit_status=True)
+    r = http(
+        '--compress',
+        '--multipart',
+        f'{httpbin.url}/get',
+        tolerate_error_exit_status=True,
+    )
     assert r.exit_status == ExitStatus.ERROR
     assert 'cannot combine --compress and --multipart' in r.stderr
 
 
 def test_compress_skip_negative_ratio(httpbin_both):
-    r = http(
-        '--compress',
-        httpbin_both + '/post',
-        'foo=bar',
-    )
+    r = http('--compress', f'{httpbin_both}/post', 'foo=bar')
     assert HTTP_OK in r
     assert 'Content-Encoding' not in r.json['headers']
     assert r.json['json'] == {'foo': 'bar'}
 
 
 def test_compress_force_with_negative_ratio(httpbin_both):
-    r = http(
-        '--compress',
-        '--compress',
-        httpbin_both + '/post',
-        'foo=bar',
-    )
+    r = http('--compress', '--compress', f'{httpbin_both}/post', 'foo=bar')
     assert HTTP_OK in r
     assert r.json['headers']['Content-Encoding'] == 'deflate'
     assert_decompressed_equal(r.json['data'], '{"foo": "bar"}')
 
 
 def test_compress_json(httpbin_both):
-    r = http(
-        '--compress',
-        '--compress',
-        httpbin_both + '/post',
-        'foo=bar',
-    )
+    r = http('--compress', '--compress', f'{httpbin_both}/post', 'foo=bar')
     assert HTTP_OK in r
     assert r.json['headers']['Content-Encoding'] == 'deflate'
     assert_decompressed_equal(r.json['data'], '{"foo": "bar"}')
@@ -80,11 +74,7 @@ def test_compress_json(httpbin_both):
 
 def test_compress_form(httpbin_both):
     r = http(
-        '--form',
-        '--compress',
-        '--compress',
-        httpbin_both + '/post',
-        'foo=bar',
+        '--form', '--compress', '--compress', f'{httpbin_both}/post', 'foo=bar'
     )
     assert HTTP_OK in r
     assert r.json['headers']['Content-Encoding'] == 'deflate'
@@ -98,7 +88,7 @@ def test_compress_raw(httpbin_both):
         FILE_CONTENT,
         '--compress',
         '--compress',
-        httpbin_both + '/post',
+        f'{httpbin_both}/post',
     )
     assert HTTP_OK in r
     assert r.json['headers']['Content-Encoding'] == 'deflate'
@@ -110,13 +100,7 @@ def test_compress_stdin(httpbin_both):
         stdin=StdinBytesIO(FILE_PATH.read_bytes()),
         stdin_isatty=False,
     )
-    r = http(
-        '--compress',
-        '--compress',
-        'PATCH',
-        httpbin_both + '/patch',
-        env=env,
-    )
+    r = http('--compress', '--compress', 'PATCH', f'{httpbin_both}/patch', env=env)
     assert HTTP_OK in r
     assert r.json['headers']['Content-Encoding'] == 'deflate'
     assert_decompressed_equal(r.json['data'], FILE_CONTENT.strip())
@@ -129,7 +113,7 @@ def test_compress_file(httpbin_both):
         '--compress',
         '--compress',
         'PUT',
-        httpbin_both + '/put',
+        f'{httpbin_both}/put',
         f'file@{FILE_PATH}',
     )
     assert HTTP_OK in r

@@ -71,7 +71,7 @@ def _remote_httpbin_available():
 @pytest.fixture
 def remote_httpbin(_remote_httpbin_available):
     if _remote_httpbin_available:
-        return 'http://' + REMOTE_HTTPBIN_DOMAIN
+        return f'http://{REMOTE_HTTPBIN_DOMAIN}'
     pytest.skip(f'{REMOTE_HTTPBIN_DOMAIN} not resolvable')
 
 

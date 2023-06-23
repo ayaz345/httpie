@@ -31,78 +31,89 @@ def test_charset_text_pairs():
 
 def test_unicode_headers(httpbin):
     # httpbin doesn't interpret UFT-8 headers
-    r = http(httpbin.url + '/headers', f'Test:{UNICODE}')
+    r = http(f'{httpbin.url}/headers', f'Test:{UNICODE}')
     assert HTTP_OK in r
 
 
 def test_unicode_headers_verbose(httpbin):
     # httpbin doesn't interpret UTF-8 headers
-    r = http('--verbose', httpbin.url + '/headers', f'Test:{UNICODE}')
+    r = http('--verbose', f'{httpbin.url}/headers', f'Test:{UNICODE}')
     assert HTTP_OK in r
     assert UNICODE in r
 
 
 def test_unicode_raw(httpbin):
-    r = http('--raw', f'test {UNICODE}', 'POST', httpbin.url + '/post')
+    r = http('--raw', f'test {UNICODE}', 'POST', f'{httpbin.url}/post')
     assert HTTP_OK in r
     assert r.json['data'] == f'test {UNICODE}'
 
 
 def test_unicode_raw_verbose(httpbin):
-    r = http('--verbose', '--raw', f'test {UNICODE}',
-             'POST', httpbin.url + '/post')
+    r = http(
+        '--verbose', '--raw', f'test {UNICODE}', 'POST', f'{httpbin.url}/post'
+    )
     assert HTTP_OK in r
     assert UNICODE in r
 
 
 def test_unicode_form_item(httpbin):
-    r = http('--form', 'POST', httpbin.url + '/post', f'test={UNICODE}')
+    r = http('--form', 'POST', f'{httpbin.url}/post', f'test={UNICODE}')
     assert HTTP_OK in r
     assert r.json['form'] == {'test': UNICODE}
 
 
 def test_unicode_form_item_verbose(httpbin):
-    r = http('--verbose', '--form',
-             'POST', httpbin.url + '/post', f'test={UNICODE}')
+    r = http(
+        '--verbose', '--form', 'POST', f'{httpbin.url}/post', f'test={UNICODE}'
+    )
     assert HTTP_OK in r
     assert UNICODE in r
 
 
 def test_unicode_json_item(httpbin):
-    r = http('--json', 'POST', httpbin.url + '/post', f'test={UNICODE}')
+    r = http('--json', 'POST', f'{httpbin.url}/post', f'test={UNICODE}')
     assert HTTP_OK in r
     assert r.json['json'] == {'test': UNICODE}
 
 
 def test_unicode_json_item_verbose(httpbin):
-    r = http('--verbose', '--json',
-             'POST', httpbin.url + '/post', f'test={UNICODE}')
+    r = http(
+        '--verbose', '--json', 'POST', f'{httpbin.url}/post', f'test={UNICODE}'
+    )
     assert HTTP_OK in r
     assert UNICODE in r
 
 
 def test_unicode_raw_json_item(httpbin):
-    r = http('--json', 'POST', httpbin.url + '/post',
-             f'test:={{ "{UNICODE}" : [ "{UNICODE}" ] }}')
+    r = http(
+        '--json',
+        'POST',
+        f'{httpbin.url}/post',
+        f'test:={{ "{UNICODE}" : [ "{UNICODE}" ] }}',
+    )
     assert HTTP_OK in r
     assert r.json['json'] == {'test': {UNICODE: [UNICODE]}}
 
 
 def test_unicode_raw_json_item_verbose(httpbin):
-    r = http('--json', 'POST', httpbin.url + '/post',
-             f'test:={{ "{UNICODE}" : [ "{UNICODE}" ] }}')
+    r = http(
+        '--json',
+        'POST',
+        f'{httpbin.url}/post',
+        f'test:={{ "{UNICODE}" : [ "{UNICODE}" ] }}',
+    )
     assert HTTP_OK in r
     assert r.json['json'] == {'test': {UNICODE: [UNICODE]}}
 
 
 def test_unicode_url_query_arg_item(httpbin):
-    r = http(httpbin.url + '/get', f'test=={UNICODE}')
+    r = http(f'{httpbin.url}/get', f'test=={UNICODE}')
     assert HTTP_OK in r
     assert r.json['args'] == {'test': UNICODE}, r
 
 
 def test_unicode_url_query_arg_item_verbose(httpbin):
-    r = http('--verbose', httpbin.url + '/get', f'test=={UNICODE}')
+    r = http('--verbose', f'{httpbin.url}/get', f'test=={UNICODE}')
     assert HTTP_OK in r
     assert UNICODE in r
 

@@ -87,14 +87,11 @@ class HTTPResponse(HTTPMessage):
 
     @property
     def metadata(self) -> str:
-        data = {}
         time_to_parse_headers = self._orig.elapsed.total_seconds()
         # noinspection PyProtectedMember
         time_since_headers_parsed = monotonic() - self._orig._httpie_headers_parsed_at
         time_elapsed = time_to_parse_headers + time_since_headers_parsed
-        # data['Headers time'] = str(round(time_to_parse_headers, 5)) + 's'
-        # data['Body time'] = str(round(time_since_headers_parsed, 5)) + 's'
-        data[ELAPSED_TIME_LABEL] = str(round(time_elapsed, 10)) + 's'
+        data = {ELAPSED_TIME_LABEL: f'{str(round(time_elapsed, 10))}s'}
         return '\n'.join(
             f'{key}: {value}'
             for key, value in data.items()
@@ -153,7 +150,7 @@ class HTTPRequest(HTTPMessage):
         headers = [
             f'{name}: {value if isinstance(value, str) else value.decode()}'
             for name, value in headers.items()
-            if not (name.lower() in SKIPPABLE_HEADERS and value == SKIP_HEADER)
+            if name.lower() not in SKIPPABLE_HEADERS or value != SKIP_HEADER
         ]
 
         headers.insert(0, request_line)
@@ -224,9 +221,7 @@ class OutputOptions(NamedTuple):
         options = {
             option: param in raw_args
             for option, param in OPTION_TO_PARAM[kind].items()
-        }
-        options.update(kwargs)
-
+        } | kwargs
         return cls(
             kind=kind,
             **options

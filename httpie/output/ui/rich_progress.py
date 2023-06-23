@@ -32,11 +32,7 @@ class BaseDisplay:
     ):
         from rich import filesize
 
-        if is_finished:
-            verb = 'Done'
-        else:
-            verb = 'Interrupted'
-
+        verb = 'Done' if is_finished else 'Interrupted'
         total_size = filesize.decimal(observed_steps)
         avg_speed = filesize.decimal(observed_steps / time_spent)
 

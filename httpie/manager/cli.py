@@ -118,7 +118,7 @@ def generate_subparsers(root, parent_parser, definitions, spec):
             generate_subparsers(root, command_parser, properties, spec)
             continue
 
-        group = spec.add_group(parent_parser.prog + ' ' + command, description=descr)
+        group = spec.add_group(f'{parent_parser.prog} {command}', description=descr)
         for argument in properties:
             argument = argument.copy()
             flags = argument.pop('flags', [])

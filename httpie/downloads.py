@@ -99,8 +99,8 @@ def filename_from_content_disposition(
     if filename:
         # Basic sanitation.
         filename = os.path.basename(filename).lstrip('.').strip()
-        if filename:
-            return filename
+    if filename:
+        return filename
 
 
 def filename_from_url(url: str, content_type: Optional[str]) -> str:
@@ -135,10 +135,11 @@ def trim_filename(filename: str, max_len: int) -> str:
 
 
 def get_filename_max_length(directory: str) -> int:
-    max_len = 255
-    if hasattr(os, 'pathconf') and 'PC_NAME_MAX' in os.pathconf_names:
-        max_len = os.pathconf(directory, 'PC_NAME_MAX')
-    return max_len
+    return (
+        os.pathconf(directory, 'PC_NAME_MAX')
+        if hasattr(os, 'pathconf') and 'PC_NAME_MAX' in os.pathconf_names
+        else 255
+    )
 
 
 def trim_filename_if_needed(filename: str, directory='.', extra=0) -> str:
@@ -192,8 +193,7 @@ class Downloader:
         # Ask the server not to encode the content so that we can resume, etc.
         request_headers['Accept-Encoding'] = 'identity'
         if self._resume:
-            bytes_have = os.path.getsize(self._output_file.name)
-            if bytes_have:
+            if bytes_have := os.path.getsize(self._output_file.name):
                 # Set ``Range`` header to resume the download
                 # TODO: Use "If-Range: mtime" to make sure it's fresh?
                 request_headers['Range'] = f'bytes={bytes_have}-'
@@ -228,21 +228,19 @@ class Downloader:
                 initial_url=initial_url,
                 final_response=final_response,
             )
-        else:
-            # `--output, -o` provided
-            if self._resume and final_response.status_code == PARTIAL_CONTENT:
-                total_size = parse_content_range(
-                    final_response.headers.get('Content-Range'),
-                    self._resumed_from
-                )
+        elif self._resume and final_response.status_code == PARTIAL_CONTENT:
+            total_size = parse_content_range(
+                final_response.headers.get('Content-Range'),
+                self._resumed_from
+            )
 
-            else:
-                self._resumed_from = 0
-                try:
-                    self._output_file.seek(0)
-                    self._output_file.truncate()
-                except OSError:
-                    pass  # stdout
+        else:
+            self._resumed_from = 0
+            try:
+                self._output_file.seek(0)
+                self._output_file.truncate()
+            except OSError:
+                pass  # stdout
 
         output_options = OutputOptions.from_message(final_response, headers=False, body=True)
         stream = RawStream(

@@ -63,9 +63,7 @@ def maybe_fetch_updates(env: Environment) -> None:
     if env.config.get('disable_update_warnings'):
         return None
 
-    data = _read_data_error_free(env.config.version_info_file)
-
-    if data:
+    if data := _read_data_error_free(env.config.version_info_file):
         current_date = datetime.now()
         last_fetched_date = datetime.fromisoformat(data['last_fetched_date'])
         earliest_fetch_date = last_fetched_date + FETCH_INTERVAL
@@ -82,10 +80,7 @@ def _get_suppress_context(env: Environment) -> Any:
     Note: if you have set the developer_mode=True in
     your config, then it will show all errors for easier
     debugging."""
-    if env.config.developer_mode:
-        return nullcontext()
-    else:
-        return suppress(BaseException)
+    return nullcontext() if env.config.developer_mode else suppress(BaseException)
 
 
 def _update_checker(
@@ -126,11 +121,10 @@ def _get_update_status(env: Environment) -> Optional[str]:
         if not is_version_greater(last_released_version, current_version):
             return None
 
-        text = UPDATE_MESSAGE_FORMAT.format(
+        return UPDATE_MESSAGE_FORMAT.format(
             last_released_version=last_released_version,
             installation_method=BUILD_CHANNEL,
         )
-        return text
 
 
 def get_update_status(env: Environment) -> str:

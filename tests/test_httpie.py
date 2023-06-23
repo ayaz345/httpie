@@ -46,7 +46,7 @@ def test_version():
 
 
 def test_GET(httpbin_both):
-    r = http('GET', httpbin_both + '/get')
+    r = http('GET', f'{httpbin_both}/get')
     assert HTTP_OK in r
 
 
@@ -70,30 +70,30 @@ def test_path_as_is():
 
 
 def test_DELETE(httpbin_both):
-    r = http('DELETE', httpbin_both + '/delete')
+    r = http('DELETE', f'{httpbin_both}/delete')
     assert HTTP_OK in r
 
 
 def test_PUT(httpbin_both):
-    r = http('PUT', httpbin_both + '/put', 'foo=bar')
+    r = http('PUT', f'{httpbin_both}/put', 'foo=bar')
     assert HTTP_OK in r
     assert r.json['json']['foo'] == 'bar'
 
 
 def test_POST_JSON_data(httpbin_both):
-    r = http('POST', httpbin_both + '/post', 'foo=bar')
+    r = http('POST', f'{httpbin_both}/post', 'foo=bar')
     assert HTTP_OK in r
     assert r.json['json']['foo'] == 'bar'
 
 
 def test_POST_form(httpbin_both):
-    r = http('--form', 'POST', httpbin_both + '/post', 'foo=bar')
+    r = http('--form', 'POST', f'{httpbin_both}/post', 'foo=bar')
     assert HTTP_OK in r
     assert '"foo": "bar"' in r
 
 
 def test_POST_form_multiple_values(httpbin_both):
-    r = http('--form', 'POST', httpbin_both + '/post', 'foo=bar', 'foo=baz')
+    r = http('--form', 'POST', f'{httpbin_both}/post', 'foo=bar', 'foo=baz')
     assert HTTP_OK in r
     assert r.json['form'] == {
         'foo': ['bar', 'baz']
@@ -101,7 +101,7 @@ def test_POST_form_multiple_values(httpbin_both):
 
 
 def test_POST_raw(httpbin_both):
-    r = http('--raw', 'foo bar', 'POST', httpbin_both + '/post')
+    r = http('--raw', 'foo bar', 'POST', f'{httpbin_both}/post')
     assert HTTP_OK in r
     assert '"foo bar"' in r
 
@@ -111,13 +111,13 @@ def test_POST_stdin(httpbin_both):
         stdin=StdinBytesIO(FILE_PATH.read_bytes()),
         stdin_isatty=False,
     )
-    r = http('--form', 'POST', httpbin_both + '/post', env=env)
+    r = http('--form', 'POST', f'{httpbin_both}/post', env=env)
     assert HTTP_OK in r
     assert FILE_CONTENT in r
 
 
 def test_POST_file(httpbin_both):
-    r = http('--form', 'POST', httpbin_both + '/post', f'file@{FILE_PATH}')
+    r = http('--form', 'POST', f'{httpbin_both}/post', f'file@{FILE_PATH}')
     assert HTTP_OK in r
     assert FILE_CONTENT in r
 
@@ -131,7 +131,7 @@ def test_form_POST_file_redirected_stdin(httpbin):
         r = http(
             '--form',
             'POST',
-            httpbin + '/post',
+            f'{httpbin}/post',
             f'file@{FILE_PATH}',
             tolerate_error_exit_status=True,
             env=MockEnvironment(
@@ -148,7 +148,7 @@ def test_raw_POST_key_values_supplied(httpbin):
         '--raw',
         'foo bar',
         'POST',
-        httpbin + '/post',
+        f'{httpbin}/post',
         'foo=bar',
         tolerate_error_exit_status=True,
     )
@@ -161,7 +161,7 @@ def test_raw_POST_redirected_stdin(httpbin):
         '--raw',
         'foo bar',
         'POST',
-        httpbin + '/post',
+        f'{httpbin}/post',
         tolerate_error_exit_status=True,
         env=MockEnvironment(
             stdin='some=value',
@@ -173,83 +173,86 @@ def test_raw_POST_redirected_stdin(httpbin):
 
 
 def test_headers(httpbin_both):
-    r = http('GET', httpbin_both + '/headers', 'Foo:bar')
+    r = http('GET', f'{httpbin_both}/headers', 'Foo:bar')
     assert HTTP_OK in r
     assert '"User-Agent": "HTTPie' in r, r
     assert '"Foo": "bar"' in r
 
 
 def test_headers_unset(httpbin_both):
-    r = http('GET', httpbin_both + '/headers')
+    r = http('GET', f'{httpbin_both}/headers')
     assert 'Accept' in r.json['headers']  # default Accept present
 
-    r = http('GET', httpbin_both + '/headers', 'Accept:')
+    r = http('GET', f'{httpbin_both}/headers', 'Accept:')
     assert 'Accept' not in r.json['headers']  # default Accept unset
 
 
 @pytest.mark.skip('unimplemented')
 def test_unset_host_header(httpbin_both):
-    r = http('GET', httpbin_both + '/headers')
+    r = http('GET', f'{httpbin_both}/headers')
     assert 'Host' in r.json['headers']  # default Host present
 
-    r = http('GET', httpbin_both + '/headers', 'Host:')
+    r = http('GET', f'{httpbin_both}/headers', 'Host:')
     assert 'Host' not in r.json['headers']  # default Host unset
 
 
 def test_unset_useragent_header(httpbin_both):
-    r = http('GET', httpbin_both + '/headers')
+    r = http('GET', f'{httpbin_both}/headers')
     assert 'User-Agent' in r.json['headers']  # default User-Agent present
 
-    r = http('GET', httpbin_both + '/headers', 'User-Agent:')
+    r = http('GET', f'{httpbin_both}/headers', 'User-Agent:')
     assert 'User-Agent' not in r.json['headers']  # default User-Agent unset
 
 
 def test_headers_empty_value(httpbin_both):
-    r = http('GET', httpbin_both + '/headers')
+    r = http('GET', f'{httpbin_both}/headers')
     assert r.json['headers']['Accept']  # default Accept has value
 
-    r = http('GET', httpbin_both + '/headers', 'Accept;')
+    r = http('GET', f'{httpbin_both}/headers', 'Accept;')
     assert r.json['headers']['Accept'] == ''  # Accept has no value
 
 
 def test_headers_empty_value_with_value_gives_error(httpbin):
     with pytest.raises(ParseError):
-        http('GET', httpbin + '/headers', 'Accept;SYNTAX_ERROR')
+        http('GET', f'{httpbin}/headers', 'Accept;SYNTAX_ERROR')
 
 
 def test_headers_omit(httpbin_both):
-    r = http('GET', httpbin_both + '/headers', 'Accept:')
+    r = http('GET', f'{httpbin_both}/headers', 'Accept:')
     assert 'Accept' not in r.json['headers']
 
 
 def test_headers_multiple_omit(httpbin_both):
-    r = http('GET', httpbin_both + '/headers', 'Foo:bar', 'Bar:baz',
-             'Foo:', 'Baz:quux')
+    r = http(
+        'GET',
+        f'{httpbin_both}/headers',
+        'Foo:bar',
+        'Bar:baz',
+        'Foo:',
+        'Baz:quux',
+    )
     assert 'Foo' not in r.json['headers']
     assert r.json['headers']['Bar'] == 'baz'
     assert r.json['headers']['Baz'] == 'quux'
 
 
 def test_headers_same_after_omit(httpbin_both):
-    r = http('GET', httpbin_both + '/headers', 'Foo:bar', 'Foo:',
-             'Foo:quux')
+    r = http('GET', f'{httpbin_both}/headers', 'Foo:bar', 'Foo:', 'Foo:quux')
     assert r.json['headers']['Foo'] == 'quux'
 
 
 def test_headers_fully_omit(httpbin_both):
-    r = http('GET', httpbin_both + '/headers', 'Foo:bar', 'Foo:baz',
-             'Foo:')
+    r = http('GET', f'{httpbin_both}/headers', 'Foo:bar', 'Foo:baz', 'Foo:')
     assert 'Foo' not in r.json['headers']
 
 
 def test_headers_multiple_values(httpbin_both):
-    r = http('GET', httpbin_both + '/headers', 'Foo:bar', 'Foo:baz')
+    r = http('GET', f'{httpbin_both}/headers', 'Foo:bar', 'Foo:baz')
     assert r.json['headers']['Foo'] == 'bar,baz'
 
 
 def test_headers_multiple_values_repeated(httpbin_both):
-    r = http('GET', httpbin_both + '/headers', 'Foo:bar', 'Foo:baz',
-             'Foo:bar')
+    r = http('GET', f'{httpbin_both}/headers', 'Foo:bar', 'Foo:baz', 'Foo:bar')
     assert r.json['headers']['Foo'] == 'bar,baz,bar'
 
 
@@ -268,20 +271,26 @@ def test_headers_multiple_values_repeated(httpbin_both):
     ),
 ])
 def test_headers_multiple_values_with_empty(httpbin_both, headers, expected):
-    r = http('GET', httpbin_both + '/headers', *headers)
+    r = http('GET', f'{httpbin_both}/headers', *headers)
     assert r.json['headers']['Foo'] == expected
 
 
 def test_headers_multiple_values_mixed(httpbin_both):
-    r = http('GET', httpbin_both + '/headers', 'Foo:bar', 'Vary:XXX',
-             'Foo:baz', 'Vary:YYY', 'Foo:quux')
+    r = http(
+        'GET',
+        f'{httpbin_both}/headers',
+        'Foo:bar',
+        'Vary:XXX',
+        'Foo:baz',
+        'Vary:YYY',
+        'Foo:quux',
+    )
     assert r.json['headers']['Vary'] == 'XXX,YYY'
     assert r.json['headers']['Foo'] == 'bar,baz,quux'
 
 
 def test_headers_preserve_prepared_headers(httpbin_both):
-    r = http('POST', httpbin_both + '/post', 'Content-Length:0',
-             '--raw', 'foo')
+    r = http('POST', f'{httpbin_both}/post', 'Content-Length:0', '--raw', 'foo')
     assert r.json['headers']['Content-Length'] == '3'
 
 
@@ -300,22 +309,31 @@ def test_headers_multiple_headers_representation(httpbin_both, pretty):
 
 
 def test_response_headers_multiple(http_server):
-    r = http('GET', http_server + '/headers', 'Foo:bar', 'Foo:baz')
+    r = http('GET', f'{http_server}/headers', 'Foo:bar', 'Foo:baz')
     assert 'Foo: bar' in r
     assert 'Foo: baz' in r
 
 
 def test_response_headers_multiple_repeated(http_server):
-    r = http('GET', http_server + '/headers', 'Foo:bar', 'Foo:baz',
-             'Foo:bar')
+    r = http('GET', f'{http_server}/headers', 'Foo:bar', 'Foo:baz', 'Foo:bar')
     assert r.count('Foo: bar') == 2
     assert 'Foo: baz' in r
 
 
 @pytest.mark.parametrize('pretty', ['format', 'none'])
 def test_response_headers_multiple_representation(http_server, pretty):
-    r = http('--pretty', pretty, http_server + '/headers',
-             'A:A', 'A:B', 'A:C', 'B:A', 'B:B', 'C:C', 'C:c')
+    r = http(
+        '--pretty',
+        pretty,
+        f'{http_server}/headers',
+        'A:A',
+        'A:B',
+        'A:C',
+        'B:A',
+        'B:B',
+        'C:C',
+        'C:c',
+    )
 
     assert 'A: A' in r
     assert 'A: B' in r
@@ -327,8 +345,11 @@ def test_response_headers_multiple_representation(http_server, pretty):
 
 
 def test_json_input_preserve_order(httpbin_both):
-    r = http('PATCH', httpbin_both + '/patch',
-             'order:={"map":{"1":"first","2":"second"}}')
+    r = http(
+        'PATCH',
+        f'{httpbin_both}/patch',
+        'order:={"map":{"1":"first","2":"second"}}',
+    )
     assert HTTP_OK in r
     assert r.json['data'] == \
         '{"order": {"map": {"1": "first", "2": "second"}}}'
@@ -353,20 +374,11 @@ def test_json_input_preserve_order(httpbin_both):
     )
 ])
 def test_options_content_length_preservation(httpbin, extra_args, expected_content_length):
-    r = http(
-        '--offline',
-        'OPTIONS',
-        httpbin + '/anything',
-        *extra_args
-    )
+    r = http('--offline', 'OPTIONS', f'{httpbin}/anything', *extra_args)
     assert f'Content-Length: {expected_content_length}' in r
 
 
 @pytest.mark.parametrize('method', ['options', 'Options', 'OPTIONS'])
 def test_options_dropping_redundant_content_length(httpbin, method):
-    r = http(
-        '--offline',
-        method,
-        httpbin + '/anything'
-    )
+    r = http('--offline', method, f'{httpbin}/anything')
     assert 'Content-Length' not in r
